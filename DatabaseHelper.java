@@ -37,8 +37,15 @@ class DatabaseHelper {
 		String userTable = "CREATE TABLE IF NOT EXISTS cse360users ("
 				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
 				+ "email VARCHAR(255) UNIQUE, "
-				+ "password VARCHAR(255), "
-				+ "role VARCHAR(20))";
+				+ "role VARCHAR(20), "
+				+ "username VARCHAR(255), "
+				+ "password VARCHAR(255),"
+				+ "oneTimePassword BOOLEAN, "
+				+ "passwordExpired TIMESTAMP, "
+				+ "fullName VARCHAR(255), "
+				+ "prefName VARCHAR(255), "  //preferred Name
+				+ "skillLevel VARCHAR(18)), "; //Advanced, intermediate, etc.
+		
 		statement.execute(userTable);
 	}
 
@@ -53,12 +60,20 @@ class DatabaseHelper {
 		return true;
 	}
 
-	public void register(String email, String password, String role) throws SQLException {
-		String insertUser = "INSERT INTO cse360users (email, password, role) VALUES (?, ?, ?)";
+	public void register(String email, String password, String role, String fullName, 
+			String prefName, 
+            boolean oneTimePassword, Timestamp passwordExpired, String skillLevel) throws SQLException {
+		String insertUser = "INSERT INTO cse360users (email, password, role, fullName, prefName, "
+				+ "oneTimePassword, passwordExpired, skillLevel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
 			pstmt.setString(1, email);
 			pstmt.setString(2, password);
 			pstmt.setString(3, role);
+			pstmt.setString(4, fullName);
+		    	pstmt.setString(5, prefName);
+		    	pstmt.setBoolean(6, oneTimePassword);
+		    	pstmt.setTimestamp(7, passwordExpired);
+		    	pstmt.setString(8, skillLevel);
 			pstmt.executeUpdate();
 		}
 	}
