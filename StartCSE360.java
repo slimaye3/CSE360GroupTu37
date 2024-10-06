@@ -22,7 +22,8 @@ public class StartCSE360 {
 				setupAdministrator();
 			}
 			else {
-				System.out.println( "If you are an administrator, then select A\nIf you are an user then select U\nEnter your choice:  " );
+				System.out.println( "If you are an administrator, then select A\nIf you are an instructor then select I\n"
+						+ "If you are a user, then select U\nEnter your choice:  " );
 				String role = scanner.nextLine();
 
 				switch (role) {
@@ -32,8 +33,11 @@ public class StartCSE360 {
 				case "A":
 					adminFlow();
 					break;
+				case "I":
+					instructorFlow();
+					break;
 				default:
-					System.out.println("Invalid choice. Please select 'a', 'u'");
+					System.out.println("Invalid choice. Please select 'a', 'i', 'u'");
 					databaseHelper.closeConnection();
 				}
 
@@ -49,11 +53,23 @@ public class StartCSE360 {
 	}
 
 	private static void setupAdministrator() throws SQLException {
+		boolean matched = false;
+		String passwordfirst = null;
+		String password = null;
 		System.out.println("Setting up the Administrator access.");
 		System.out.print("Enter Admin Email: ");
 		String email = scanner.nextLine();
-		System.out.print("Enter Admin Password: ");
-		String password = scanner.nextLine();
+		while(!matched) {
+			System.out.print("Enter Admin Password: ");
+			passwordfirst = scanner.nextLine();
+			System.out.print("Enter Admin Password Again: ");
+			password = scanner.nextLine();
+			if(password.compareTo(passwordfirst) != 0) {
+				System.out.print("ERROR : Passwords must match.\n");	
+			}else {
+				matched = true;
+			}
+		}
 		databaseHelper.register(email, password, "admin");
 		System.out.println("Administrator setup completed.");
 
@@ -61,7 +77,9 @@ public class StartCSE360 {
 
 	private static void userFlow() throws SQLException {
 		String email = null;
+		String passwordfirst = null;
 		String password = null;
+		boolean matched = false;
 		System.out.println("user flow");
 		System.out.print("What would you like to do 1.Register 2.Login  ");
 		String choice = scanner.nextLine();
@@ -69,8 +87,17 @@ public class StartCSE360 {
 		case "1": 
 			System.out.print("Enter User Email: ");
 			email = scanner.nextLine();
-			System.out.print("Enter User Password: ");
-			password = scanner.nextLine(); 
+			while(!matched) {
+				System.out.print("Enter User Password: ");
+				passwordfirst = scanner.nextLine(); 
+				System.out.print("Enter User Password Again: ");
+				password = scanner.nextLine(); 
+				if(password.compareTo(passwordfirst) != 0) {
+					System.out.print("ERROR : Passwords must match.\n");
+				}else {
+					matched = true;
+				}
+			}
 			// Check if user already exists in the database
 		    if (!databaseHelper.doesUserExist(email)) {
 		        databaseHelper.register(email, password, "user");
@@ -86,6 +113,53 @@ public class StartCSE360 {
 			password = scanner.nextLine();
 			if (databaseHelper.login(email, password, "user")) {
 				System.out.println("User login successful.");
+//				databaseHelper.displayUsers();
+
+			} else {
+				System.out.println("Invalid user credentials. Try again!!");
+			}
+			break;
+		}
+	}
+	
+	private static void instructorFlow() throws SQLException {
+		String email = null;
+		String passwordfirst = null;
+		String password = null;
+		boolean matched = false;
+		System.out.println("instructor flow");
+		System.out.print("What would you like to do 1.Register 2.Login  ");
+		String choice = scanner.nextLine();
+		switch(choice) {
+		case "1": 
+			System.out.print("Enter Instructor Email: ");
+			email = scanner.nextLine();
+			while(!matched) {
+				System.out.print("Enter Instructor Password: ");
+				passwordfirst = scanner.nextLine(); 
+				System.out.print("Enter Instructor Password Again: ");
+				password = scanner.nextLine(); 
+				if(password.compareTo(passwordfirst) != 0) {
+					System.out.print("ERROR : Passwords must match.\n");
+				}else {
+					matched = true;
+				}
+			}
+			// Check if user already exists in the database
+		    if (!databaseHelper.doesUserExist(email)) {
+		        databaseHelper.register(email, password, "user");
+		        System.out.println("Instructor setup completed.");
+		    } else {
+		        System.out.println("Instructor already exists.");
+		    }
+			break;
+		case "2":
+			System.out.print("Enter Instructor Email: ");
+			email = scanner.nextLine();
+			System.out.print("Enter Instructor Password: ");
+			password = scanner.nextLine();
+			if (databaseHelper.login(email, password, "user")) {
+				System.out.println("Instructor login successful.");
 //				databaseHelper.displayUsers();
 
 			} else {
