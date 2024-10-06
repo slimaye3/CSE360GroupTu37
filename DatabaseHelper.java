@@ -34,17 +34,19 @@ class DatabaseHelper {
 	}
 
 	private void createTables() throws SQLException {
+		String destroy = "DROP TABLE IF EXISTS cse360users ";
+		statement.execute(destroy);
 		String userTable = "CREATE TABLE IF NOT EXISTS cse360users ("
 				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
-				+ "email VARCHAR(255) UNIQUE, "
-				+ "role VARCHAR(20), "
 				+ "username VARCHAR(255), "
 				+ "password VARCHAR(255),"
-				+ "oneTimePassword BOOLEAN, "
-				+ "passwordExpired TIMESTAMP, "
+				+ "role VARCHAR(20), "
+				+ "email VARCHAR(255) UNIQUE, "
 				+ "fullName VARCHAR(255), "
 				+ "prefName VARCHAR(255), "  //preferred Name
-				+ "skillLevel VARCHAR(18)), "; //Advanced, intermediate, etc.
+				+ "oneTimePassword BOOLEAN, "
+				+ "passwordExpired DATE, "
+				+ "skillLevel VARCHAR(255)) "; //Advanced, intermediate, etc.
 		
 		statement.execute(userTable);
 	}
@@ -60,28 +62,29 @@ class DatabaseHelper {
 		return true;
 	}
 
-	public void register(String email, String password, String role, String fullName, 
+	public void register(String username, String password, String role, String email, String fullName, 
 			String prefName, 
-            boolean oneTimePassword, Timestamp passwordExpired, String skillLevel) throws SQLException {
-		String insertUser = "INSERT INTO cse360users (email, password, role, fullName, prefName, "
-				+ "oneTimePassword, passwordExpired, skillLevel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            boolean oneTimePassword, Date passwordExpired, String skillLevel) throws SQLException {
+		String insertUser = "INSERT INTO cse360users (username, password, role, email, fullName, prefName, "
+				+ "oneTimePassword, passwordExpired, skillLevel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
-			pstmt.setString(1, email);
+			pstmt.setString(1, username);
 			pstmt.setString(2, password);
 			pstmt.setString(3, role);
-			pstmt.setString(4, fullName);
-		    	pstmt.setString(5, prefName);
-		    	pstmt.setBoolean(6, oneTimePassword);
-		    	pstmt.setTimestamp(7, passwordExpired);
-		    	pstmt.setString(8, skillLevel);
+			pstmt.setString(4, email);
+			pstmt.setString(5, fullName);
+		    pstmt.setString(6, prefName);
+		    pstmt.setBoolean(7, oneTimePassword);
+		    pstmt.setDate(8, passwordExpired);
+		    pstmt.setString(9, skillLevel);
 			pstmt.executeUpdate();
 		}
 	}
 
-	public boolean login(String email, String password, String role) throws SQLException {
-		String query = "SELECT * FROM cse360users WHERE email = ? AND password = ? AND role = ?";
+	public boolean login(String username, String password, String role) throws SQLException {
+		String query = "SELECT * FROM cse360users WHERE username = ? AND password = ? AND role = ?";
 		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, email);
+			pstmt.setString(1, username);
 			pstmt.setString(2, password);
 			pstmt.setString(3, role);
 			try (ResultSet rs = pstmt.executeQuery()) {
@@ -90,11 +93,11 @@ class DatabaseHelper {
 		}
 	}
 	
-	public boolean doesUserExist(String email) {
-	    String query = "SELECT COUNT(*) FROM cse360users WHERE email = ?";
+	public boolean doesUserExist(String username) {
+	    String query = "SELECT COUNT(*) FROM cse360users WHERE username = ?";
 	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 	        
-	        pstmt.setString(1, email);
+	        pstmt.setString(1, username);
 	        ResultSet rs = pstmt.executeQuery();
 	        
 	        if (rs.next()) {
@@ -115,26 +118,31 @@ class DatabaseHelper {
 		while(rs.next()) { 
 			// Retrieve by column name 
 			int id  = rs.getInt("id"); 
-			String  email = rs.getString("email"); 
+			String  username = rs.getString("username"); 
 			String password = rs.getString("password"); 
+			String  email = rs.getString("email"); 
 			String role = rs.getString("role");  
 			String fullName = rs.getString("fullName");
 			String prefName = rs.getString("prefName");
 			boolean oneTime = rs.getBoolean("oneTimePassword");
-			Timestamp expireDate = rs.getTimestamp("passwordExpired");
+			Date expireDate = rs.getDate("passwordExpired");
 			String skill = rs.getString("skillLevel");
 
 			// Display values 
 			System.out.print("ID: " + id); 
-			System.out.print(", Email: " + email); 
+			System.out.print(", Username: " + username); 
 			System.out.print(", Pass: " + password); 
 			System.out.print(", Role: " + role); 
-			System.out.print(", Full Name: " + fullName); 
-			System.out.print(", Pref Name: " + prefName); 
-			System.out.print(", One-Time Pass: " + oneTime); 
-			System.out.print(", Expire Date: " + expireDate); 
-			System.out.println(", Skill Level: " + skill); 
-			
+			if(role.compareTo("admin") != 0) {
+				System.out.print(", Email: " + email); 
+				System.out.print(", Full Name: " + fullName); 
+				System.out.print(", Pref Name: " + prefName); 
+				System.out.print(", One-Time Pass: " + oneTime); 
+				System.out.print(", Expire Date: " + expireDate); 
+				System.out.println(", Skill Level: " + skill); 
+			}else {
+				System.out.println();
+			}
 		} 
 	}
 	
@@ -146,25 +154,31 @@ class DatabaseHelper {
 		while(rs.next()) { 
 			// Retrieve by column name 
 			int id  = rs.getInt("id"); 
-			String  email = rs.getString("email"); 
+			String  username = rs.getString("username"); 
 			String password = rs.getString("password"); 
+			String  email = rs.getString("email"); 
 			String role = rs.getString("role");  
 			String fullName = rs.getString("fullName");
 			String prefName = rs.getString("prefName");
 			boolean oneTime = rs.getBoolean("oneTimePassword");
-			Timestamp expireDate = rs.getTimestamp("passwordExpired");
+			Date expireDate = rs.getDate("passwordExpired");
 			String skill = rs.getString("skillLevel");
 
 			// Display values 
 			System.out.print("ID: " + id); 
-			System.out.print(", Email: " + email); 
+			System.out.print(", Username: " + username); 
 			System.out.print(", Pass: " + password); 
 			System.out.print(", Role: " + role); 
-			System.out.print(", Full Name: " + fullName); 
-			System.out.print(", Pref Name: " + prefName); 
-			System.out.print(", One-Time Pass: " + oneTime); 
-			System.out.print(", Expire Date: " + expireDate); 
-			System.out.println(", Skill Level: " + skill); 
+			if(role.compareTo("admin") != 0) {
+				System.out.print(", Email: " + email); 
+				System.out.print(", Full Name: " + fullName); 
+				System.out.print(", Pref Name: " + prefName); 
+				System.out.print(", One-Time Pass: " + oneTime); 
+				System.out.print(", Expire Date: " + expireDate); 
+				System.out.println(", Skill Level: " + skill); 
+			}else {
+				System.out.println();
+			}
 		} 
 	}
 
