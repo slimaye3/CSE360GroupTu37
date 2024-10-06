@@ -1,2 +1,2 @@
-# JackRepository1
-For in class on the 24th of September
+# CSE360GroupTu37
+Group Project Phase 1
