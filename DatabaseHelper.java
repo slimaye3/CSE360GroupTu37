@@ -118,12 +118,23 @@ class DatabaseHelper {
 			String  email = rs.getString("email"); 
 			String password = rs.getString("password"); 
 			String role = rs.getString("role");  
+			String fullName = rs.getString("fullName");
+			String prefName = rs.getString("prefName");
+			boolean oneTime = rs.getBoolean("oneTimePassword");
+			Timestamp expireDate = rs.getTimestamp("passwordExpired");
+			String skill = rs.getString("skillLevel");
 
 			// Display values 
 			System.out.print("ID: " + id); 
-			System.out.print(", Age: " + email); 
-			System.out.print(", First: " + password); 
-			System.out.println(", Last: " + role); 
+			System.out.print(", Email: " + email); 
+			System.out.print(", Pass: " + password); 
+			System.out.print(", Role: " + role); 
+			System.out.print(", Full Name: " + fullName); 
+			System.out.print(", Pref Name: " + prefName); 
+			System.out.print(", One-Time Pass: " + oneTime); 
+			System.out.print(", Expire Date: " + expireDate); 
+			System.out.println(", Skill Level: " + skill); 
+			
 		} 
 	}
 	
@@ -138,12 +149,22 @@ class DatabaseHelper {
 			String  email = rs.getString("email"); 
 			String password = rs.getString("password"); 
 			String role = rs.getString("role");  
+			String fullName = rs.getString("fullName");
+			String prefName = rs.getString("prefName");
+			boolean oneTime = rs.getBoolean("oneTimePassword");
+			Timestamp expireDate = rs.getTimestamp("passwordExpired");
+			String skill = rs.getString("skillLevel");
 
 			// Display values 
 			System.out.print("ID: " + id); 
-			System.out.print(", Age: " + email); 
-			System.out.print(", First: " + password); 
-			System.out.println(", Last: " + role); 
+			System.out.print(", Email: " + email); 
+			System.out.print(", Pass: " + password); 
+			System.out.print(", Role: " + role); 
+			System.out.print(", Full Name: " + fullName); 
+			System.out.print(", Pref Name: " + prefName); 
+			System.out.print(", One-Time Pass: " + oneTime); 
+			System.out.print(", Expire Date: " + expireDate); 
+			System.out.println(", Skill Level: " + skill); 
 		} 
 	}
 
