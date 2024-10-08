@@ -107,6 +107,13 @@ class DatabaseHelper {
 			pstmt.executeUpdate();
 		}
 	}
+	public void removeUser(String username) throws SQLException{
+		String query = "DELETE FROM cse360users WHERE username = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, username);
+			pstmt.executeUpdate();
+		}
+	}
 
 
 	// Check if the database is empty
