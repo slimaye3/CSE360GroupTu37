@@ -10,7 +10,7 @@ public class StartCSE360 {
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper();
 	private static final Scanner scanner = new Scanner(System.in);
 
-	public static void main( String[] args )
+	public static void main( String[] args ) throws SQLException
 	{
 
 		try { 
@@ -23,7 +23,7 @@ public class StartCSE360 {
 				setupAdministrator();
 			}
 			else {
-				normalStartup();
+				mainMenu();
 			}
 		} catch (SQLException e) {
 			System.err.println("Database error: " + e.getMessage());
@@ -60,30 +60,55 @@ public class StartCSE360 {
 		}
 		databaseHelper.register(username, password, "admin", email, fullName, prefName, false, expire, skillLevel);
 		System.out.println("Administrator setup completed.");
-		normalStartup();
+		mainMenu();
 
 	}
 
-	private static void normalStartup() throws SQLException {
-		System.out.println( "If you are an administrator, then type A\nIf you are an instructor then type I\n"
-				+ "If you are a Student, then type S\nEnter your choice:  " );
-		String role = scanner.nextLine();
-
-		switch (role) {
-		case "S":
-			studentFlow();
-			break;
-		case "A":
-			adminFlow();
-			break;
-		case "I":
-			instructorFlow();
-			break;
-		default:
-			System.out.println("Invalid choice. Please select 'A', 'I', 'S'");
-			databaseHelper.closeConnection();
-		}
-	}
+	private static void mainMenu() {
+		System.out.println(" ---------------------------- ");
+	    System.out.println("Welcome to the System");
+	    System.out.println("1. Admin Login");
+	    System.out.println("2. Instructor Login");
+	    System.out.println("3. Student Login");
+	    System.out.println("4. Invitation Code");
+	    System.out.print("Choose an option: ");
+	    String choice = scanner.nextLine();
+	    
+	    switch (choice) {
+	        case "1":
+	            try {
+	                adminFlow();
+	            } catch (SQLException e) {
+	                e.printStackTrace();
+	            }
+	            break;
+	        case "2":
+	            try {
+	                instructorFlow();
+	            } catch (SQLException e) {
+	                e.printStackTrace();
+	            }
+	            break;
+	        case "3":
+	            try {
+	                studentFlow();
+	            } catch (SQLException e) {
+	                e.printStackTrace();
+	            }
+	            break;
+	        case "4":
+	            try {
+	                inviteFlow();
+	            } catch (SQLException e) {
+	                e.printStackTrace();
+	            }
+	            break;
+	        default:
+	            System.out.println("Invalid choice. Please try again.");
+	            mainMenu(); 
+	            break;
+	    }
+	} 
 	
 	private static void studentFlow() throws SQLException {
 		String email = null;
@@ -248,6 +273,48 @@ public class StartCSE360 {
 		}
 	}
 
+	private static String pickRole() {
+		System.out.println( "To invite an instructor then type I\n"
+				+ "To invite a Student, then type S\nEnter your choice:  " );
+		String role = scanner.nextLine();
+		
+		while(true) {
+			switch (role) {
+			case "S":
+				return "Student";
+			case "I":
+				return "Instructor";
+			default:
+				System.out.println("Invalid choice. Please select 'I', 'S'");
+			}
+		}
+	}
+	
+	private static void inviteFlow() throws SQLException {
+		System.out.println("invite flow");
+		System.out.print("Enter Given Invite Code: ");
+		String code = scanner.nextLine();
+		if(databaseHelper.doesInviteExist(code)) {
+			String role = databaseHelper.getRole(code);
+			System.out.println("Welcome " + role + "!");
+			System.out.println(" ----------------------- ");
+			switch (role) {
+            case "Student":
+            	databaseHelper.removeInvite(code);
+                studentFlow();
+                break;
+            case "Instructor":
+            	databaseHelper.removeInvite(code);
+            	instructorFlow();
+                break;
+            default: 
+            	System.out.println("Invite Role Invalid");
+            	mainMenu();
+			}
+			
+		}
+	}
+	
 	private static void adminFlow() throws SQLException {
 		System.out.println("admin flow");
 		System.out.print("Enter Admin Username: ");
@@ -264,26 +331,52 @@ public class StartCSE360 {
 		}
 	}
 	
-	private static void adminHome() {
+	private static void adminHome() throws SQLException {
 	    boolean loggedOut = false;
 	    System.out.println("Welcome to the Admin Home Page, ");
-
+	    System.out.println(" ---------------------------- ");
 	    while (!loggedOut) {
-	        System.out.println("Please choose an option:");
 	        System.out.println("1. View All Users");
-	        System.out.println("2. Manage Instructors");
-	        System.out.println("3. Logout");
+	        System.out.println("2. Invite User");
+	        System.out.println("3. Reset an Account");
+	        System.out.println("4. Delete an Account");
+	        System.out.println("5. Change a Users Role");
+	        System.out.println("6. Logout");
+	        System.out.print("Please choose an option: ");
 
 	        String choice = scanner.nextLine();
 
 	        switch (choice) {
 	            case "1":
 	                System.out.println("Displaying all users...");
+	                databaseHelper.displayUsersByAdmin();
+	                System.out.println(" ----------------------- ");
 	                break;
 	            case "2":
-	                System.out.println("Managing instructors...");
+	                String inviteRole = pickRole();
+	                System.out.print("Input the Code for Invited User: ");
+	                String inviteCode = scanner.nextLine();
+	                databaseHelper.inviteUser(inviteCode, inviteRole);
+	                System.out.println("User Invited with Code: " + inviteCode);
+	                System.out.println(" ----------------------- ");
 	                break;
 	            case "3":
+	                System.out.println("Input username to be reset: ");
+	                String resetName = scanner.nextLine();
+	                if(databaseHelper.doesUserExist(resetName)) {
+	                	
+	                }else {
+	                	System.out.println("User does not exist!");
+	                	System.out.println(" ------------------ ");
+	                }
+	                break;
+	            case "4":
+	                System.out.println("Managing instructors...");
+	                break;
+	            case "5":
+	                System.out.println("Managing instructors...");
+	                break;
+	            case "6":
 	                loggedOut = true; // Set loggedOut to true to exit loop
 	                System.out.println("Logging out...");
 	                break;
