@@ -312,6 +312,10 @@ public class StartCSE360 {
             	mainMenu();
 			}
 			
+		}else {
+			System.out.println("Invite Code Invalid.");
+			System.out.println(" ----------------------- ");
+			mainMenu();
 		}
 	}
 	
@@ -371,7 +375,16 @@ public class StartCSE360 {
 	                }
 	                break;
 	            case "4":
-	                System.out.println("Managing instructors...");
+	                System.out.print("Enter Username for Account Deletion: ");
+	                String deleteUser = scanner.nextLine();
+	                if(databaseHelper.doesUserExist(deleteUser)) {
+	                	databaseHelper.removeUser(deleteUser);
+	                	System.out.println("User Removed.");
+	                	System.out.println(" ------------------ ");
+	                }else {
+	                	System.out.println("User does not exist!");
+	                	System.out.println(" ------------------ ");
+	                }
 	                break;
 	            case "5":
 	                System.out.println("Managing instructors...");
