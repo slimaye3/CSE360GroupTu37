@@ -27,12 +27,13 @@ class DatabaseHelper {
 			System.out.println("Connecting to database...");
 			connection = DriverManager.getConnection(DB_URL, USER, PASS);
 			statement = connection.createStatement(); 
-			createTables();  // Create the necessary tables if they don't exist
+			createTables(); 
+			// Create the necessary tables if they don't exist
 		} catch (ClassNotFoundException e) {
 			System.err.println("JDBC Driver not found: " + e.getMessage());
 		}
 	}
-
+	
 	private void createTables() throws SQLException {
 		String destroy = "DROP TABLE IF EXISTS cse360users ";
 		statement.execute(destroy);
@@ -49,6 +50,62 @@ class DatabaseHelper {
 				+ "skillLevel VARCHAR(255)) "; //Advanced, intermediate, etc.
 		
 		statement.execute(userTable);
+		String inviteTable = "CREATE TABLE IF NOT EXISTS invites ("
+				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
+				+ "code VARCHAR(255), "
+				+ "role VARCHAR(20))";
+
+		
+		statement.execute(inviteTable);
+	}
+	
+	public void inviteUser(String code, String role) throws SQLException {
+		String insertInvite = "INSERT INTO invites (code, role) VALUES (?, ?)";
+		try (PreparedStatement pstmt = connection.prepareStatement(insertInvite)) {
+			pstmt.setString(1, code);
+			pstmt.setString(2, role);
+			pstmt.executeUpdate();
+		}
+	}
+
+	public boolean doesInviteExist(String code) throws SQLException{
+		String query = "SELECT COUNT(*) FROM invites WHERE code = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        
+	        pstmt.setString(1, code);
+	        ResultSet rs = pstmt.executeQuery();
+	        
+	        if (rs.next()) {
+	            // If the count is greater than 0, the user exists
+	            return rs.getInt(1) > 0;
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return false; // If an error occurs, assume user doesn't exist
+	}
+	
+	public String getRole(String code) throws SQLException{
+		String role = null;
+		String query = "SELECT * FROM invites WHERE code = ? ";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, code);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while(rs.next()) {
+					return rs.getString("role");
+				}
+			}
+		
+		}
+		return role; 
+	}
+	
+	public void removeInvite(String code) throws SQLException{
+		String query = "DELETE FROM invites WHERE code = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, code);
+			pstmt.executeUpdate();
+		}
 	}
 
 
@@ -150,7 +207,7 @@ class DatabaseHelper {
 		String sql = "SELECT * FROM cse360users"; 
 		Statement stmt = connection.createStatement();
 		ResultSet rs = stmt.executeQuery(sql); 
-
+	
 		while(rs.next()) { 
 			// Retrieve by column name 
 			int id  = rs.getInt("id"); 
