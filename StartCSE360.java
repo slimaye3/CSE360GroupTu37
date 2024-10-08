@@ -256,12 +256,43 @@ public class StartCSE360 {
 		String password = scanner.nextLine();
 		if (databaseHelper.login(username, password, "admin")) {
 			System.out.println("Admin login successful.");
-			databaseHelper.displayUsersByAdmin();
+			System.out.println();
+			adminHome();
 
 		} else {
 			System.out.println("Invalid admin credentials. Try again!!");
 		}
 	}
+	
+	private static void adminHome() {
+	    boolean loggedOut = false;
+	    System.out.println("Welcome to the Admin Home Page, ");
+
+	    while (!loggedOut) {
+	        System.out.println("Please choose an option:");
+	        System.out.println("1. View All Users");
+	        System.out.println("2. Manage Instructors");
+	        System.out.println("3. Logout");
+
+	        String choice = scanner.nextLine();
+
+	        switch (choice) {
+	            case "1":
+	                System.out.println("Displaying all users...");
+	                break;
+	            case "2":
+	                System.out.println("Managing instructors...");
+	                break;
+	            case "3":
+	                loggedOut = true; // Set loggedOut to true to exit loop
+	                System.out.println("Logging out...");
+	                break;
+	            default:
+	                System.out.println("Invalid choice. Please try again.");
+	                break;
+	        }
+	    }
+	} 
 
 
 }
