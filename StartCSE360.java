@@ -21,14 +21,16 @@ package simpleDatabase;
 import java.sql.*;
 import java.sql.Date;
 import java.util.Scanner;
-import java.util.*;
+import java.time.*;
+import java.time.format.DateTimeParseException;
 
 public class StartCSE360 {
 	
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper(); //// Instance of DatabaseHelper for managing user data and database operations.
 	private static final Scanner scanner = new Scanner(System.in);
 	
-	private static Date today;
+	private static Date today = Date.valueOf(LocalDate.now());
+
 
 	/**
  	* This method  establishes a connection to the database, ensuring that the 
@@ -110,6 +112,7 @@ public class StartCSE360 {
 	    System.out.println("3. Student Login");
 	    System.out.println("4. Invitation Code");
 	    System.out.println("5. One-Time Password Reset");
+	    System.out.println("6. Quit");
 	    System.out.print("Choose an option: ");
 	    String choice = scanner.nextLine();
 	    
@@ -148,6 +151,10 @@ public class StartCSE360 {
 	            } catch (SQLException e) {
 	                e.printStackTrace();
 	            }
+	            break;
+	        case "6":
+	            System.out.println("Goodbye!");
+	            databaseHelper.closeConnection();
 	            break;
 	        default:
 	            System.out.println("Invalid choice. Please try again.");
@@ -212,7 +219,7 @@ public class StartCSE360 {
 			
 			// Check if user already exists in the database
 		    if (!databaseHelper.doesUserExist(username)) {
-		    	databaseHelper.register(username, password, "student", email , fullName, prefName, false, expire, skillLevel);
+		    	databaseHelper.register(username, password, "Student", email , fullName, prefName, false, expire, skillLevel);
 		    	studentHome();
 		    } else {
 		        System.out.println("User already exists.");
@@ -224,7 +231,7 @@ public class StartCSE360 {
 			username = scanner.nextLine();
 			System.out.print("Enter Student Password: ");
 			password = scanner.nextLine();
-			if (databaseHelper.login(username, password, "student")) {
+			if (databaseHelper.login(username, password, "Student")) {
 				System.out.println("User login successful.");
 			    studentHome();
 			} else {
@@ -290,7 +297,7 @@ public class StartCSE360 {
 			
 			// Check if user already exists in the database
 		    if (!databaseHelper.doesUserExist(username)) {
-		    	databaseHelper.register(username, password,"instructor", email, fullName, prefName, false, expire, skillLevel);
+		    	databaseHelper.register(username, password,"Instructor", email, fullName, prefName, false, expire, skillLevel);
 		        System.out.println("Instructor setup completed.");
 		        instructorHome();
 		    } else {
@@ -303,7 +310,7 @@ public class StartCSE360 {
 			username = scanner.nextLine();
 			System.out.print("Enter Instructor Password: ");
 			password = scanner.nextLine();
-			if (databaseHelper.login(username, password, "instructor")) {
+			if (databaseHelper.login(username, password, "Instructor")) {
 				System.out.println("Instructor login successful.");
 				instructorHome();
 
@@ -412,56 +419,59 @@ public class StartCSE360 {
 		System.out.println("Enter your one-time reset password:");
 		String tempPassword = scanner.nextLine();
 		
+		
+		
 		if(databaseHelper.isPasswordValid(username, tempPassword)) {
 			
-			
-			System.out.println("Enter your new password:");
-			String newPassword = scanner.nextLine();
-			
-			databaseHelper.updatePassword(username, newPassword);
-			System.out.println("Password Updated");
-			String role = databaseHelper.getRoleID(username);
-			
-			switch (role) {
-            case "Student":
-            	databaseHelper.oneTimePasswordUsed(username);
-            	while(!matched) {
-    				System.out.print("Enter New Student Password: ");
-    				passwordFirst = scanner.nextLine(); 
-    				System.out.print("Enter New Student Password Again: ");
-    				password = scanner.nextLine(); 
-    				if(password.compareTo(passwordFirst) != 0) {
-    					System.out.print("ERROR : Passwords must match.\n");
-    				}else {
-    					matched = true;
-    				}
-    			}
-            	System.out.println("Password Reset!");
-            	System.out.println(" -------------- ");
-                studentHome();
-                break;
-            case "Instructor":
-            	databaseHelper.oneTimePasswordUsed(username);
-            	while(!matched) {
-    				System.out.print("Enter New Instructor Password: ");
-    				passwordFirst = scanner.nextLine(); 
-    				System.out.print("Enter New Instructor Password Again: ");
-    				password = scanner.nextLine(); 
-    				if(password.compareTo(passwordFirst) != 0) {
-    					System.out.print("ERROR : Passwords must match.\n");
-    				}else {
-    					matched = true;
-    				}
-    			}
-            	System.out.println("Password Reset!");
-            	System.out.println(" -------------- ");
-                instructorHome();
-                break;
-            default: 
-            	System.out.println("Password not set");
-            	mainMenu();
+			if(databaseHelper.getDate(username).before(today)) {
+				System.out.println("One-Time Password has expired! Please contact admin.");
+				System.out.println(" -------------------------------------------------- ");
+				mainMenu();
+			}else {
+				String role = databaseHelper.getRoleID(username);
+				
+				switch (role) {
+	            case "Student":
+	            	databaseHelper.oneTimePasswordUsed(username);
+	            	while(!matched) {
+	    				System.out.print("Enter New Student Password: ");
+	    				passwordFirst = scanner.nextLine(); 
+	    				System.out.print("Enter New Student Password Again: ");
+	    				password = scanner.nextLine(); 
+	    				if(password.compareTo(passwordFirst) != 0) {
+	    					System.out.print("ERROR : Passwords must match.\n");
+	    				}else {
+	    					matched = true;
+	    				}
+	    			}
+	            	databaseHelper.updatePassword(username, password);
+	            	System.out.println("Password Reset!");
+	            	System.out.println(" -------------- ");
+	                studentHome();
+	                break;
+	            case "Instructor":
+	            	databaseHelper.oneTimePasswordUsed(username);
+	            	while(!matched) {
+	    				System.out.print("Enter New Instructor Password: ");
+	    				passwordFirst = scanner.nextLine(); 
+	    				System.out.print("Enter New Instructor Password Again: ");
+	    				password = scanner.nextLine(); 
+	    				if(password.compareTo(passwordFirst) != 0) {
+	    					System.out.print("ERROR : Passwords must match.\n");
+	    				}else {
+	    					matched = true;
+	    				}
+	    			}
+	            	databaseHelper.updatePassword(username, password);
+	            	System.out.println("Password Reset!");
+	            	System.out.println(" -------------- ");
+	                instructorHome();
+	                break;
+	            default: 
+	            	System.out.println("Password not set");
+	            	mainMenu();
+				}
 			}
-			
 		}else {
 			System.out.println("One-time Password Invalid.");
 			System.out.println(" ----------------------- ");
@@ -510,9 +520,24 @@ public class StartCSE360 {
 	                System.out.println(" ----------------------- ");
 	                break;
 	            case "3":
-	                System.out.println("Input username to be reset: ");
+	                System.out.print("Input username to be reset: ");
 	                String resetName = scanner.nextLine();
 	                if(databaseHelper.doesUserExist(resetName)) {
+	                	System.out.print("Enter One-Time Password: ");
+	                	String onetimepass = scanner.nextLine();
+	                	System.out.print("Enter expiration date (YYYY-MM-DD): ");
+	                	String expiration = scanner.nextLine();
+	                	try {
+	                		LocalDate expireLocal = LocalDate.parse(expiration);
+	                		Date expireDate = Date.valueOf(expireLocal);
+	                		databaseHelper.resetUserPassword(resetName, onetimepass, expireDate);
+	                		System.out.println("One time password set!");
+	                		System.out.println(" -------------------- ");
+	                    }catch(DateTimeParseException e) {
+	                        System.out.println(e);
+	                        System.out.println("Invalid date format! Please follow format: YYYY-MM-DD");
+	                        System.out.println(" --------------------------------------------------- ");
+	                    } 
 	                	
 	                }else {
 	                	System.out.println("User does not exist!");
@@ -537,6 +562,7 @@ public class StartCSE360 {
 	            case "6":
 	                loggedOut = true; // Set loggedOut to true to exit loop
 	                System.out.println("Logging out...");
+	                mainMenu();
 	                break;
 	            default:
 	                System.out.println("Invalid choice. Please try again.");
