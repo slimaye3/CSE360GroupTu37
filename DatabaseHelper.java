@@ -387,11 +387,11 @@ class DatabaseHelper {
 ///////// Reset Functions 
 	
 	
-public void resetUserPassword(String username, String oneTimePassword, Date expiration) throws SQLException {
-	String sql = "UPDATE cse360users SET oneTimePassword = ?, passwordExpiration = ?, oneTimePasswordUsed = FALSE WHERE username = ?";
+public void resetUserPassword(String username, String password, Date expiration) throws SQLException {
+	String sql = "UPDATE cse360users SET password = ?, passwordExpired = ?, oneTimePassword = true WHERE username = ?";
 	
 	try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-		pstmt.setString(1, oneTimePassword);
+		pstmt.setString(1, password);
         pstmt.setDate(2, expiration);
         pstmt.setString(3, username);
         pstmt.executeUpdate();
@@ -399,13 +399,13 @@ public void resetUserPassword(String username, String oneTimePassword, Date expi
 	
 }
 
-public boolean isPasswordValid(String username, String oneTimePassword) throws SQLException {
+public boolean isPasswordValid(String username, String password) throws SQLException {
     boolean isValid = false;
-    String sql = "SELECT oneTimePassword FROM cse360users WHERE username = ? AND oneTimePasswordUsed = FALSE AND oneTimePassword = ?";
+    String sql = "SELECT FROM cse360users WHERE username = ? AND password = ? AND oneTimePassword = true";
     
     try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
     	pstmt.setString(1, username); 
-        pstmt.setString(2, oneTimePassword);
+        pstmt.setString(2, password);
         
         
         ResultSet rs = pstmt.executeQuery();
@@ -445,7 +445,7 @@ public void updatePassword(String username, String givenPassword) throws SQLExce
 }
 
 public void oneTimePasswordUsed(String username) throws SQLException {
-    String sql = "UPDATE cse360users SET oneTimePasswordUsed = TRUE WHERE username = ?";
+    String sql = "UPDATE cse360users SET oneTimePassword = false WHERE username = ?";
 
     try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
         pstmt.setString(1, username); 
