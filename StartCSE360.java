@@ -19,14 +19,16 @@
 package simpleDatabase;
 
 import java.sql.*;
-import java.sql.SQLException;
+import java.sql.Date;
 import java.util.Scanner;
+import java.util.*;
 
 public class StartCSE360 {
-
 	
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper(); //// Instance of DatabaseHelper for managing user data and database operations.
 	private static final Scanner scanner = new Scanner(System.in);
+	
+	private static Date today;
 
 	/**
  	* This method  establishes a connection to the database, ensuring that the 
@@ -35,7 +37,7 @@ public class StartCSE360 {
  	*/
 	public static void main( String[] args ) throws SQLException
 	{
-
+		System.out.println(today);
 		try { 
 			databaseHelper.connectToDatabase();  // Connect to the database
 
@@ -107,6 +109,7 @@ public class StartCSE360 {
 	    System.out.println("2. Instructor Login");
 	    System.out.println("3. Student Login");
 	    System.out.println("4. Invitation Code");
+	    System.out.println("5. One-Time Password Reset");
 	    System.out.print("Choose an option: ");
 	    String choice = scanner.nextLine();
 	    
@@ -135,6 +138,13 @@ public class StartCSE360 {
 	        case "4":
 	            try {
 	                inviteFlow();
+	            } catch (SQLException e) {
+	                e.printStackTrace();
+	            }
+	            break;
+	        case "5":
+	            try {
+	                resetFlow();
 	            } catch (SQLException e) {
 	                e.printStackTrace();
 	            }
@@ -202,19 +212,11 @@ public class StartCSE360 {
 			
 			// Check if user already exists in the database
 		    if (!databaseHelper.doesUserExist(username)) {
-		    	boolean logout = false;
 		    	databaseHelper.register(username, password, "student", email , fullName, prefName, false, expire, skillLevel);
-		        System.out.println("User setup completed.");
-		        System.out.println(" ------------------- ");
-		        System.out.println("Logout at anytime by typing 'logout'.");
-		        while(!logout) {
-		        	 String input = scanner.nextLine();
-				        if(input.compareTo("logout") == 0) {
-				        	logout = true;
-				        }
-		        }
+		    	studentHome();
 		    } else {
 		        System.out.println("User already exists.");
+		        mainMenu();
 		    }
 			break;
 		case "2":
@@ -224,18 +226,10 @@ public class StartCSE360 {
 			password = scanner.nextLine();
 			if (databaseHelper.login(username, password, "student")) {
 				System.out.println("User login successful.");
-//				databaseHelper.displayUsers();
-				 System.out.println(" ------------------- ");
-			        System.out.println("Logout at anytime by typing 'logout'.");
-			        boolean logout = false;
-			        while(!logout) {
-			        	 String input = scanner.nextLine();
-					        if(input.compareTo("logout") == 0) {
-					        	logout = true;
-					        }
-			        }
+			    studentHome();
 			} else {
 				System.out.println("Invalid user credentials. Try again!!");
+				mainMenu();
 			}
 			break;
 		}
@@ -298,15 +292,10 @@ public class StartCSE360 {
 		    if (!databaseHelper.doesUserExist(username)) {
 		    	databaseHelper.register(username, password,"instructor", email, fullName, prefName, false, expire, skillLevel);
 		        System.out.println("Instructor setup completed.");
-		        boolean logout = false;
-		        while(!logout) {
-		        	 String input = scanner.nextLine();
-				        if(input.compareTo("logout") == 0) {
-				        	logout = true;
-				        }
-		        }
+		        instructorHome();
 		    } else {
 		        System.out.println("Instructor already exists.");
+		        mainMenu();
 		    }
 			break;
 		case "2":
@@ -316,17 +305,11 @@ public class StartCSE360 {
 			password = scanner.nextLine();
 			if (databaseHelper.login(username, password, "instructor")) {
 				System.out.println("Instructor login successful.");
-//				databaseHelper.displayUsers();
-				boolean logout = false;
-		        while(!logout) {
-		        	 String input = scanner.nextLine();
-				        if(input.compareTo("logout") == 0) {
-				        	logout = true;
-				        }
-		        }
+				instructorHome();
 
 			} else {
 				System.out.println("Invalid user credentials. Try again!!");
+				mainMenu();
 			}
 			break;
 		}
@@ -418,6 +401,73 @@ public class StartCSE360 {
 			System.out.println("Invalid admin credentials. Try again!!");
 		}
 	}
+	
+	private static void resetFlow() throws SQLException {
+		System.out.println("reset flow");
+		String passwordFirst = null;
+		String password = null;
+    	boolean matched = false;
+		System.out.println("Enter your User ID:");
+		String username = scanner.nextLine();
+		System.out.println("Enter your one-time reset password:");
+		String tempPassword = scanner.nextLine();
+		
+		if(databaseHelper.isPasswordValid(username, tempPassword)) {
+			
+			
+			System.out.println("Enter your new password:");
+			String newPassword = scanner.nextLine();
+			
+			databaseHelper.updatePassword(username, newPassword);
+			System.out.println("Password Updated");
+			String role = databaseHelper.getRoleID(username);
+			
+			switch (role) {
+            case "Student":
+            	databaseHelper.oneTimePasswordUsed(username);
+            	while(!matched) {
+    				System.out.print("Enter New Student Password: ");
+    				passwordFirst = scanner.nextLine(); 
+    				System.out.print("Enter New Student Password Again: ");
+    				password = scanner.nextLine(); 
+    				if(password.compareTo(passwordFirst) != 0) {
+    					System.out.print("ERROR : Passwords must match.\n");
+    				}else {
+    					matched = true;
+    				}
+    			}
+            	System.out.println("Password Reset!");
+            	System.out.println(" -------------- ");
+                studentHome();
+                break;
+            case "Instructor":
+            	databaseHelper.oneTimePasswordUsed(username);
+            	while(!matched) {
+    				System.out.print("Enter New Instructor Password: ");
+    				passwordFirst = scanner.nextLine(); 
+    				System.out.print("Enter New Instructor Password Again: ");
+    				password = scanner.nextLine(); 
+    				if(password.compareTo(passwordFirst) != 0) {
+    					System.out.print("ERROR : Passwords must match.\n");
+    				}else {
+    					matched = true;
+    				}
+    			}
+            	System.out.println("Password Reset!");
+            	System.out.println(" -------------- ");
+                instructorHome();
+                break;
+            default: 
+            	System.out.println("Password not set");
+            	mainMenu();
+			}
+			
+		}else {
+			System.out.println("One-time Password Invalid.");
+			System.out.println(" ----------------------- ");
+			mainMenu();
+		}
+	}
 
 	/**
 	 * Displays the admin home page, offering various management options including 
@@ -494,6 +544,69 @@ public class StartCSE360 {
 	        }
 	    }
 	} 
+	
+	private static void studentHome() {
+	    boolean loggedOut = false;
+	    System.out.println("Welcome to the Student Home Page, ");
+
+	    while (!loggedOut) {
+	        System.out.println("Please choose an option:");
+	        System.out.println("1. View Courses");
+	        System.out.println("2. View Grades");
+	        System.out.println("3. Logout");
+
+	        String choice = scanner.nextLine();
+
+	        switch (choice) {
+	            case "1": // Show Courses ( Not finished yet )
+	                System.out.println("Displaying courses...");
+	                break;
+	            case "2": // Show Grades ( Not finished yet )
+	                System.out.println("Displaying grades...");
+	                break;
+	            case "3": // Just log out simple
+	                loggedOut = true;
+	                System.out.println("Logging out...");
+	                break;
+	            default:
+	                System.out.println("Invalid choice. Please try again.");
+	                break;
+	        }
+	    }
+	  mainMenu();
+	}
+
+	private static void instructorHome() {
+	    boolean loggedOut = false;
+	    System.out.println("Welcome to the Instructor Home Page, ");
+
+	    while (!loggedOut) {
+	        System.out.println("Please choose an option:");
+	        System.out.println("1. View Students");
+	        System.out.println("2. Manage Courses");
+	        System.out.println("3. Logout");
+
+	        String choice = scanner.nextLine();
+
+	        switch (choice) {
+	            case "1":
+	                System.out.println("Displaying students...");
+	                break;
+	            case "2":
+	                System.out.println("Managing courses...");
+	                break;
+	            case "3":
+	                loggedOut = true; 
+	                System.out.println("Logging out...");
+	                break;
+	            default:
+	                System.out.println("Invalid choice. Please try again.");
+	                break;
+	        }
+	    }
+	   mainMenu();
+	}
+
 
 
 }
