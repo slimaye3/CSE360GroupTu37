@@ -383,4 +383,89 @@ class DatabaseHelper {
 		} 
 	}
 
+	
+///////// Reset Functions 
+	
+	
+public void resetUserPassword(String username, String oneTimePassword, Date expiration) throws SQLException {
+	String sql = "UPDATE cse360users SET oneTimePassword = ?, passwordExpiration = ?, oneTimePasswordUsed = FALSE WHERE username = ?";
+	
+	try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+		pstmt.setString(1, oneTimePassword);
+        pstmt.setDate(2, expiration);
+        pstmt.setString(3, username);
+        pstmt.executeUpdate();
+	}
+	
+}
+
+public boolean isPasswordValid(String username, String oneTimePassword) throws SQLException {
+    boolean isValid = false;
+    String sql = "SELECT oneTimePassword FROM cse360users WHERE username = ? AND oneTimePasswordUsed = FALSE AND oneTimePassword = ?";
+    
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+    	pstmt.setString(1, username); 
+        pstmt.setString(2, oneTimePassword);
+        
+        
+        ResultSet rs = pstmt.executeQuery();
+        
+            if (rs.next()) {
+                isValid = true;
+                return isValid;
+            }    
+    }
+    return isValid;
+}
+
+public Date getDate(String username) throws SQLException{
+	Date expire = null;
+	String query = "SELECT * FROM cse360users WHERE username = ? ";
+	try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+		pstmt.setString(1, username);
+		try (ResultSet rs = pstmt.executeQuery()) {
+			while(rs.next()) {
+				return rs.getDate("passwordExpired");
+			}
+		}
+	
+	}
+	return expire; 
+}
+
+public void updatePassword(String username, String givenPassword) throws SQLException {
+    String sql = "UPDATE cse360users SET password = ? WHERE username = ?";
+    
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        pstmt.setString(1, givenPassword);  
+        pstmt.setString(2, username);  
+        pstmt.executeUpdate();
+
+    }
+}
+
+public void oneTimePasswordUsed(String username) throws SQLException {
+    String sql = "UPDATE cse360users SET oneTimePasswordUsed = TRUE WHERE username = ?";
+
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        pstmt.setString(1, username); 
+        pstmt.executeUpdate();
+    }
+}
+
+public String getRoleID(String username) throws SQLException{
+	String role = null;
+	String query = "SELECT * FROM cse360users WHERE username = ? ";
+	try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+		pstmt.setString(1, username);
+		try (ResultSet rs = pstmt.executeQuery()) {
+			while(rs.next()) {
+				return rs.getString("role");
+			}
+		}
+	
+	}
+	return role; 
+}
+
 }
