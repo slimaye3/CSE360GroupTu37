@@ -1,3 +1,21 @@
+/**
+ * The StartCSE360 class serves as the main entry point for the CSE 360 help system application.
+ * It initializes the application, sets up the user interface, and handles user interactions 
+ * related to registration, login, and navigation within the application.
+ * 
+ * Responsibilities:
+ * - Handle user input for registration and login.
+ * - Manage the navigation between different screens of the application.
+ * - Integrate with the DatabaseHelper class to manage user data, including registration, login validation, 
+ *   and user role management.
+ * 
+ * This class connects to the DatabaseHelper for managing user data and ensures 
+ * a seamless user experience in the help system.
+ * 
+ * @version 1.0
+ * @date October 8, 2024
+ */
+
 package simpleDatabase;
 
 import java.sql.*;
@@ -7,9 +25,14 @@ import java.util.Scanner;
 public class StartCSE360 {
 
 	
-	private static final DatabaseHelper databaseHelper = new DatabaseHelper();
+	private static final DatabaseHelper databaseHelper = new DatabaseHelper(); //// Instance of DatabaseHelper for managing user data and database operations.
 	private static final Scanner scanner = new Scanner(System.in);
 
+	/**
+ 	* This method  establishes a connection to the database, ensuring that the 
+	* necessary resources are available for user management operations. 
+ 	* @throws SQLException If there is an error establishing a connection to the database.
+ 	*/
 	public static void main( String[] args ) throws SQLException
 	{
 
@@ -34,7 +57,15 @@ public class StartCSE360 {
 			databaseHelper.closeConnection();
 		}
 	}
-
+	
+	/**
+	 * This method prompts the user for an administrator username and password,
+	 * ensuring that the entered passwords match. Once the administrator details
+	 * are confirmed, it registers the administrator in the database using the 
+	 * DatabaseHelper class.
+	 *
+	 * @throws SQLException If an error occurs during database operations.
+	 */
 	private static void setupAdministrator() throws SQLException {
 		boolean matched = false;
 		String passwordfirst = null;
@@ -63,7 +94,12 @@ public class StartCSE360 {
 		mainMenu();
 
 	}
-
+	
+	/**
+	 * This method presents the user with options to log in as an administrator, 
+	 * instructor, student, or to enter an invitation code. Based on the user's 
+	 * choice, it directs the flow to the appropriate login method.
+	 */
 	private static void mainMenu() {
 		System.out.println(" ---------------------------- ");
 	    System.out.println("Welcome to the System");
@@ -109,7 +145,19 @@ public class StartCSE360 {
 	            break;
 	    }
 	} 
-	
+
+	/**
+	 * This method allows students to either register or log in to the system.
+	 * If the user chooses to register, it collects necessary details (username, 
+	 * email, password, and personal information) and checks if the user already 
+	 * exists in the database. If the user exists, it informs the user; otherwise, 
+	 * it registers the new student.
+  	 *
+	 * If the user chooses to log in, it verifies the provided credentials against 
+	 * the database. Upon successful login, the student can log out at any time.
+	 *
+	 * @throws SQLException If an error occurs during database operations.
+	 */
 	private static void studentFlow() throws SQLException {
 		String email = null;
 		String passwordfirst = null;
@@ -192,7 +240,18 @@ public class StartCSE360 {
 			break;
 		}
 	}
-	
+	/**
+	 * This method provides instructors with options to register or log in. If 
+	 * the user opts to register, it collects necessary information (username, 
+	 * email, password, and personal details) and checks for the existence of 
+	 * the user in the database. If the instructor does not exist, it registers 
+	 * them; otherwise, it notifies the user of their existing account. 
+	 * 
+	 * For login, it verifies the provided credentials and allows the instructor 
+	 * to log out anytime.
+	 * 
+	 * @throws SQLException If there is an error during the database operations.
+	 */
 	private static void instructorFlow() throws SQLException {
 		String email = null;
 		String passwordfirst = null;
@@ -273,6 +332,13 @@ public class StartCSE360 {
 		}
 	}
 
+	/**
+	 * Prompts the user to select a role for inviting a new user (either an instructor or a student). 
+	 * The method displays a message instructing the user to enter 'I' for Instructor or 'S' for Student. 
+	 * It continues to prompt the user until a valid choice is made. The input is case-sensitive.
+	 *
+	 * @return The role selected by the user, either "Student" or "Instructor".
+	 */
 	private static String pickRole() {
 		System.out.println( "To invite an instructor then type I\n"
 				+ "To invite a Student, then type S\nEnter your choice:  " );
@@ -289,7 +355,16 @@ public class StartCSE360 {
 			}
 		}
 	}
-	
+	/**
+	 * Handles the invitation flow for new users by verifying the provided invite code.
+	 * If the invite code exists in the database, it retrieves the role associated with that code 
+	 * and welcomes the user accordingly. Depending on the role, it directs the user to either 
+	 * the student or instructor flow, allowing them to proceed with registration or login. 
+	 * If the invite code is invalid, the method notifies the user and returns to the main menu.
+	 * 
+	 * @throws SQLException If an error occurs during database operations, such as checking 
+	 *                      the invite code or retrieving user roles.
+	 */
 	private static void inviteFlow() throws SQLException {
 		System.out.println("invite flow");
 		System.out.print("Enter Given Invite Code: ");
@@ -319,6 +394,15 @@ public class StartCSE360 {
 		}
 	}
 	
+	/**
+	 * Manages the admin login process. The method prompts the user for the admin username 
+	 * and password. It checks the entered credentials against the database. If the login is 
+	 * successful, the user is directed to the admin home page where they can manage users 
+	 * and other administrative tasks. If the credentials are invalid, the method notifies the user 
+	 * and allows them to try again.
+	 * 
+	 * @throws SQLException If an error occurs during the login process or any database operations.
+	 */
 	private static void adminFlow() throws SQLException {
 		System.out.println("admin flow");
 		System.out.print("Enter Admin Username: ");
@@ -334,7 +418,18 @@ public class StartCSE360 {
 			System.out.println("Invalid admin credentials. Try again!!");
 		}
 	}
-	
+
+	/**
+	 * Displays the admin home page, offering various management options including 
+	 * viewing all users, inviting new users, resetting accounts, deleting accounts, 
+	 * and changing user roles. The method keeps running until the admin chooses to log out. 
+	 * It prompts the user for input and executes the selected option, providing feedback 
+	 * based on their choices. If an invalid option is chosen, the method prompts the admin 
+	 * to select again.
+	 * 
+	 * @throws SQLException If an error occurs during any of the database operations performed
+	 *                      within the selected options.
+	 */
 	private static void adminHome() throws SQLException {
 	    boolean loggedOut = false;
 	    System.out.println("Welcome to the Admin Home Page, ");
