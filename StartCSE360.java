@@ -408,6 +408,14 @@ public class StartCSE360 {
 		}
 	}
 	
+	/**
+	 * Manages the reset password process where the user 
+	 * has been given a one-time password, checks the date 
+	 * against the expiration date and allows for creation
+	 * of a new password for the user. 
+	 * 
+	 * @throws SQLException If an error occurs during the login process or any database operations.
+	 */
 	private static void resetFlow() throws SQLException {
 		System.out.println("reset flow");
 		String passwordFirst = null;
@@ -427,7 +435,7 @@ public class StartCSE360 {
 				System.out.println(" -------------------------------------------------- ");
 				mainMenu();
 			}else {
-				String role = databaseHelper.getRoleID(username);
+				String role = databaseHelper.getRoleFrom(username);
 				
 				switch (role) {
 	            case "Student":
@@ -597,6 +605,14 @@ public class StartCSE360 {
 	    }
 	} 
 	
+	/**
+	 * Displays the student home page, currenly offering to view courses, 
+	 * grades, or to logout. Logout is currently the only functional 
+	 * course of action. 
+	 * 
+	 * @throws SQLException If an error occurs during any of the database operations performed
+	 *                      within the selected options.
+	 */
 	private static void studentHome() {
 	    boolean loggedOut = false;
 	    System.out.println("Welcome to the Student Home Page, ");
@@ -628,6 +644,14 @@ public class StartCSE360 {
 	  mainMenu();
 	}
 
+	/**
+	 * Displays the instructor home page, currenly offering to view students, 
+	 * manage courses, or to logout. Logout is currently the only functional 
+	 * course of action. 
+	 * 
+	 * @throws SQLException If an error occurs during any of the database operations performed
+	 *                      within the selected options.
+	 */
 	private static void instructorHome() {
 	    boolean loggedOut = false;
 	    System.out.println("Welcome to the Instructor Home Page, ");
