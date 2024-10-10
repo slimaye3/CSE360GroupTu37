@@ -26,12 +26,16 @@ import java.time.format.DateTimeParseException;
 
 public class StartCSE360 {
 	
+	/** ------------ Declarations ------------ */
+	
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper(); //// Instance of DatabaseHelper for managing user data and database operations.
 	private static final Scanner scanner = new Scanner(System.in);
 	
 	private static Date today = Date.valueOf(LocalDate.now());
 
-
+	
+	/** ------------ Main  ------------ */
+	
 	/**
  	* This method  establishes a connection to the database, ensuring that the 
 	* necessary resources are available for user management operations. 
@@ -61,6 +65,9 @@ public class StartCSE360 {
 			databaseHelper.closeConnection();
 		}
 	}
+	
+	
+	/** ------------ Empty Database Setup  ------------ */
 	
 	/**
 	 * This method prompts the user for an administrator username and password,
@@ -98,6 +105,9 @@ public class StartCSE360 {
 		mainMenu();
 
 	}
+	
+	
+	/** ------------ Main Menu  ------------ */
 	
 	/**
 	 * This method presents the user with options to log in as an administrator, 
@@ -161,6 +171,9 @@ public class StartCSE360 {
 	            break;
 	    }
 	} 
+	
+	
+	/** ------------ Flow Functions  ------------ */
 
 	/**
 	 * This method allows students to either register or log in to the system.
@@ -384,31 +397,6 @@ public class StartCSE360 {
 	}
 	
 	/**
-	 * Manages the admin login process. The method prompts the user for the admin username 
-	 * and password. It checks the entered credentials against the database. If the login is 
-	 * successful, the user is directed to the admin home page where they can manage users 
-	 * and other administrative tasks. If the credentials are invalid, the method notifies the user 
-	 * and allows them to try again.
-	 * 
-	 * @throws SQLException If an error occurs during the login process or any database operations.
-	 */
-	private static void adminFlow() throws SQLException {
-		System.out.println("admin flow");
-		System.out.print("Enter Admin Username: ");
-		String username = scanner.nextLine();
-		System.out.print("Enter Admin Password: ");
-		String password = scanner.nextLine();
-		if (databaseHelper.login(username, password, "admin")) {
-			System.out.println("Admin login successful.");
-			System.out.println();
-			adminHome();
-
-		} else {
-			System.out.println("Invalid admin credentials. Try again!!");
-		}
-	}
-	
-	/**
 	 * Manages the reset password process where the user 
 	 * has been given a one-time password, checks the date 
 	 * against the expiration date and allows for creation
@@ -486,6 +474,35 @@ public class StartCSE360 {
 		}
 	}
 
+	
+	/**
+	 * Manages the admin login process. The method prompts the user for the admin username 
+	 * and password. It checks the entered credentials against the database. If the login is 
+	 * successful, the user is directed to the admin home page where they can manage users 
+	 * and other administrative tasks. If the credentials are invalid, the method notifies the user 
+	 * and allows them to try again.
+	 * 
+	 * @throws SQLException If an error occurs during the login process or any database operations.
+	 */
+	private static void adminFlow() throws SQLException {
+		System.out.println("admin flow");
+		System.out.print("Enter Admin Username: ");
+		String username = scanner.nextLine();
+		System.out.print("Enter Admin Password: ");
+		String password = scanner.nextLine();
+		if (databaseHelper.login(username, password, "admin")) {
+			System.out.println("Admin login successful.");
+			System.out.println();
+			adminHome();
+
+		} else {
+			System.out.println("Invalid admin credentials. Try again!!");
+		}
+	}
+	
+	
+	/** ------------ Home Pages ------------ */
+	
 	/**
 	 * Displays the admin home page, offering various management options including 
 	 * viewing all users, inviting new users, resetting accounts, deleting accounts, 
