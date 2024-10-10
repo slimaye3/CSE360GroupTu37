@@ -29,6 +29,8 @@ import java.sql.Statement;
 
 
 class DatabaseHelper {
+	
+	/** ------------ Declarations  ------------ */
 
 	/**
 	 * Database configuration constants for the H2 database connection, including JDBC driver, URL, user credentials,
@@ -43,6 +45,9 @@ class DatabaseHelper {
 
 	private Connection connection = null;
 	private Statement statement = null; 
+	
+	
+	/** ------------ Database Connection  ------------ */
 
 	/**
 	 * Establishes a connection to the database by loading the JDBC driver
@@ -64,6 +69,9 @@ class DatabaseHelper {
 			System.err.println("JDBC Driver not found: " + e.getMessage());
 		}
 	}
+	
+	
+	/** ------------ Create Tables  ------------ */
 
 	/**
 	 * Creates the necessary tables in the database if they do not already exist. 
@@ -97,19 +105,8 @@ class DatabaseHelper {
 		statement.execute(inviteTable);
 	}
 	
-	/**
-	 * Removes a user record from the cse360users table based on the provided username.
-	 * 
-	 * @param username the username of the record to be removed.
-	 * @throws SQLException if there is an error executing the delete command.
-	 */
-	public void removeUser(String username) throws SQLException{
-		String query = "DELETE FROM cse360users WHERE username = ?";
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, username);
-			pstmt.executeUpdate();
-		}
-	}
+	
+	/** ------------ Database Basic Functions  ------------ */
 
 	/**
 	 * Checks if the cse360users table in the database is empty. 
@@ -288,29 +285,26 @@ class DatabaseHelper {
 			}
 		} 
 	}
+		
+	
+	/** ------------ Remove User Function  ------------ */
 	
 	/**
-	 * Closes the database connection and statement if they are open.
-	 * This method is important for resource management to prevent memory leaks.
+	 * Removes a user record from the cse360users table based on the provided username.
+	 * 
+	 * @param username the username of the record to be removed.
+	 * @throws SQLException if there is an error executing the delete command.
 	 */
-	public void closeConnection() {
-		try{ 
-			if(statement!=null) statement.close(); 
-		} catch(SQLException se2) { 
-			se2.printStackTrace();
-		} 
-		try { 
-			if(connection!=null) connection.close(); 
-		} catch(SQLException se){ 
-			se.printStackTrace(); 
-		} 
+	public void removeUser(String username) throws SQLException{
+		String query = "DELETE FROM cse360users WHERE username = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, username);
+			pstmt.executeUpdate();
+		}
 	}
 	
 	
-	
-
-	
-/** Invite User Functions */
+	/** ------------ Invite User Functions  ------------ */
 
 	/**
 	 * Inserts a new invite record into the invites table with the specified
@@ -389,36 +383,29 @@ class DatabaseHelper {
 		}
 	}
 	
-	
-	
 
-
-/** Switch Role Functions */
-	
+	/** ------------ Switch Role Functions ------------ */
+		
 	/**
 	 * Changes the role of a given user to a specified new role, currently in use
 	 * by the admin for their Switch Role access.
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-public void changeRole(String username, String newRole) throws SQLException {
-	String sql = "UPDATE cse360users SET role = ? WHERE username = ?";
-	    
-    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-        pstmt.setString(1, newRole);  
-        pstmt.setString(2, username);  
-        pstmt.executeUpdate();
-
-    }
-}
-
-
-
-
-
+	public void changeRole(String username, String newRole) throws SQLException {
+		String sql = "UPDATE cse360users SET role = ? WHERE username = ?";
+		    
+	    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+	        pstmt.setString(1, newRole);  
+	        pstmt.setString(2, username);  
+	        pstmt.executeUpdate();
 	
-/*** Reset Functions */
-
+	    }
+	}
+	
+		
+	/** ------------ Reset Functions  ------------ */
+	
 	/**
 	 * Resets a users password to a one time password given by the admin 
 	 * in order to reset the users account, expiration date is also given and 
@@ -427,44 +414,44 @@ public void changeRole(String username, String newRole) throws SQLException {
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-public void resetUserPassword(String username, String password, Date expiration) throws SQLException {
-	String sql = "UPDATE cse360users SET password = ?, passwordExpired = ?, oneTimePassword = true WHERE username = ?";
-	
-	try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-		pstmt.setString(1, password);
-        pstmt.setDate(2, expiration);
-        pstmt.setString(3, username);
-        pstmt.executeUpdate();
+	public void resetUserPassword(String username, String password, Date expiration) throws SQLException {
+		String sql = "UPDATE cse360users SET password = ?, passwordExpired = ?, oneTimePassword = true WHERE username = ?";
+		
+		try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			pstmt.setString(1, password);
+	        pstmt.setDate(2, expiration);
+	        pstmt.setString(3, username);
+	        pstmt.executeUpdate();
+		}
+		
 	}
 	
-}
-
 	/**
 	 * Checks to see if a username's password is valid without requiring a role
 	 * to be checked. 
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-public boolean isPasswordValid(String username, String password) throws SQLException {
-    boolean isValid = false;
-    String sql = "SELECT FROM cse360users WHERE username = ? AND password = ? AND oneTimePassword = true";
-    
-    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-    	pstmt.setString(1, username); 
-        pstmt.setString(2, password);
-        
-        
-        ResultSet rs = pstmt.executeQuery();
-        
-            if (rs.next()) {
-                isValid = true;
-                return isValid;
-            }    
-    }
-    return isValid;
-}
-
-
+	public boolean isPasswordValid(String username, String password) throws SQLException {
+	    boolean isValid = false;
+	    String sql = "SELECT FROM cse360users WHERE username = ? AND password = ? AND oneTimePassword = true";
+	    
+	    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+	    	pstmt.setString(1, username); 
+	        pstmt.setString(2, password);
+	        
+	        
+	        ResultSet rs = pstmt.executeQuery();
+	        
+	            if (rs.next()) {
+	                isValid = true;
+	                return isValid;
+	            }    
+	    }
+	    return isValid;
+	}
+	
+	
 	/**
 	 * Retrieves the expiration date for the users one time password
 	 * to be checked against the current date and verify that the 
@@ -472,71 +459,94 @@ public boolean isPasswordValid(String username, String password) throws SQLExcep
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-public Date getDate(String username) throws SQLException{
-	Date expire = null;
-	String query = "SELECT * FROM cse360users WHERE username = ? ";
-	try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-		pstmt.setString(1, username);
-		try (ResultSet rs = pstmt.executeQuery()) {
-			while(rs.next()) {
-				return rs.getDate("passwordExpired");
+	public Date getDate(String username) throws SQLException{
+		Date expire = null;
+		String query = "SELECT * FROM cse360users WHERE username = ? ";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, username);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while(rs.next()) {
+					return rs.getDate("passwordExpired");
+				}
 			}
+		
 		}
-	
+		return expire; 
 	}
-	return expire; 
-}
-
+	
 	/**
 	 * Changes a users password to a different password given the username 
 	 * and the new password.
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-public void updatePassword(String username, String givenPassword) throws SQLException {
-    String sql = "UPDATE cse360users SET password = ? WHERE username = ?";
-    
-    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-        pstmt.setString(1, givenPassword);  
-        pstmt.setString(2, username);  
-        pstmt.executeUpdate();
-
-    }
-}
-
+	public void updatePassword(String username, String givenPassword) throws SQLException {
+	    String sql = "UPDATE cse360users SET password = ? WHERE username = ?";
+	    
+	    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+	        pstmt.setString(1, givenPassword);  
+	        pstmt.setString(2, username);  
+	        pstmt.executeUpdate();
+	
+	    }
+	}
+		
 	/**
 	 * Sets the boolean oneTimePassword to false to indicate that the 
 	 * user's current password is no longer a one time password.
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-public void oneTimePasswordUsed(String username) throws SQLException {
-    String sql = "UPDATE cse360users SET oneTimePassword = false WHERE username = ?";
-
-    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-        pstmt.setString(1, username); 
-        pstmt.executeUpdate();
-    }
-}
+	public void oneTimePasswordUsed(String username) throws SQLException {
+	    String sql = "UPDATE cse360users SET oneTimePassword = false WHERE username = ?";
+	
+	    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+	        pstmt.setString(1, username); 
+	        pstmt.executeUpdate();
+	    }
+	}
 
 	/**
 	 * Retrieves a users role given their username. 
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-public String getRoleFrom(String username) throws SQLException{
-	String role = null;
-	String query = "SELECT * FROM cse360users WHERE username = ? ";
-	try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-		pstmt.setString(1, username);
-		try (ResultSet rs = pstmt.executeQuery()) {
-			while(rs.next()) {
-				return rs.getString("role");
+	public String getRoleFrom(String username) throws SQLException{
+		String role = null;
+		String query = "SELECT * FROM cse360users WHERE username = ? ";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, username);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while(rs.next()) {
+					return rs.getString("role");
+				}
 			}
+		
 		}
-	
+		return role; 
 	}
-	return role; 
-}
+
+	
+	/** ------------ Close Database Connection  ------------ */
+	
+	/**
+	 * Closes the database connection and statement if they are open.
+	 * This method is important for resource management to prevent memory leaks.
+	 */
+	public void closeConnection() {
+		try{ 
+			if(statement!=null) statement.close(); 
+		} catch(SQLException se2) { 
+			se2.printStackTrace();
+		} 
+		try { 
+			if(connection!=null) connection.close(); 
+		} catch(SQLException se){ 
+			se.printStackTrace(); 
+		} 
+	}
+
 
 }
+
+
