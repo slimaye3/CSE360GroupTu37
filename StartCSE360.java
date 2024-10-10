@@ -108,8 +108,8 @@ public class StartCSE360 {
 		System.out.println(" ---------------------------- ");
 	    System.out.println("Welcome to the System");
 	    System.out.println("1. Admin Login");
-	    System.out.println("2. Instructor Login");
-	    System.out.println("3. Student Login");
+	    System.out.println("2. Instructor Flow");
+	    System.out.println("3. Student Flow");
 	    System.out.println("4. Invitation Code");
 	    System.out.println("5. One-Time Password Reset");
 	    System.out.println("6. Quit");
@@ -153,7 +153,6 @@ public class StartCSE360 {
 	            }
 	            break;
 	        case "6":
-	            System.out.println("Goodbye!");
 	            databaseHelper.closeConnection();
 	            break;
 	        default:
@@ -219,7 +218,7 @@ public class StartCSE360 {
 			
 			// Check if user already exists in the database
 		    if (!databaseHelper.doesUserExist(username)) {
-		    	databaseHelper.register(username, password, "Student", email , fullName, prefName, false, expire, skillLevel);
+		    	databaseHelper.register(username, password, "student", email , fullName, prefName, false, expire, skillLevel);
 		    	studentHome();
 		    } else {
 		        System.out.println("User already exists.");
@@ -231,7 +230,7 @@ public class StartCSE360 {
 			username = scanner.nextLine();
 			System.out.print("Enter Student Password: ");
 			password = scanner.nextLine();
-			if (databaseHelper.login(username, password, "Student")) {
+			if (databaseHelper.login(username, password, "student")) {
 				System.out.println("User login successful.");
 			    studentHome();
 			} else {
@@ -297,7 +296,7 @@ public class StartCSE360 {
 			
 			// Check if user already exists in the database
 		    if (!databaseHelper.doesUserExist(username)) {
-		    	databaseHelper.register(username, password,"Instructor", email, fullName, prefName, false, expire, skillLevel);
+		    	databaseHelper.register(username, password,"instructor", email, fullName, prefName, false, expire, skillLevel);
 		        System.out.println("Instructor setup completed.");
 		        instructorHome();
 		    } else {
@@ -310,7 +309,7 @@ public class StartCSE360 {
 			username = scanner.nextLine();
 			System.out.print("Enter Instructor Password: ");
 			password = scanner.nextLine();
-			if (databaseHelper.login(username, password, "Instructor")) {
+			if (databaseHelper.login(username, password, "instructor")) {
 				System.out.println("Instructor login successful.");
 				instructorHome();
 
@@ -557,7 +556,34 @@ public class StartCSE360 {
 	                }
 	                break;
 	            case "5":
-	                System.out.println("Managing instructors...");
+	                System.out.print("Enter user to be changed: ");
+	                String userToChange = scanner.nextLine();
+	                System.out.print("Enter S to change to Student, Enter I to change to Instructor: ");
+	                String newRole = scanner.nextLine();
+	                if(databaseHelper.doesUserExist(userToChange)) {
+		                switch(newRole) {
+		                	case "S":
+		                		databaseHelper.changeRole(userToChange, "student");
+		                		System.out.println(userToChange + "'s role was changed to student.");
+		                		System.out.println(" -------------------------------------------- ");
+		                	break;
+		                	
+		                	case "I": 
+		                		databaseHelper.changeRole(userToChange, "instructor");
+		                		System.out.println(userToChange + "'s role was changed to instructor.");
+		                		System.out.println(" -------------------------------------------- ");
+		                	break;
+		                	
+		                	default: 
+		                		System.out.println("Invalid Input.");
+		                		System.out.println(" ------------ ");
+		                	break;
+	                	}
+	                }else {
+	                	System.out.println("User does not exist.");
+                		System.out.println(" ------------------ ");
+
+	                }
 	                break;
 	            case "6":
 	                loggedOut = true; // Set loggedOut to true to exit loop
