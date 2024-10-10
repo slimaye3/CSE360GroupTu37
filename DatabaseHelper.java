@@ -383,6 +383,18 @@ class DatabaseHelper {
 		} 
 	}
 
+///////// Switch Role Functions
+	
+public void changeRole(String username, String newRole) throws SQLException {
+	String sql = "UPDATE cse360users SET role = ? WHERE username = ?";
+	    
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        pstmt.setString(1, newRole);  
+        pstmt.setString(2, username);  
+        pstmt.executeUpdate();
+
+    }
+}
 	
 ///////// Reset Functions 
 	
