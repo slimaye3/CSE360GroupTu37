@@ -96,83 +96,6 @@ class DatabaseHelper {
 		
 		statement.execute(inviteTable);
 	}
-
-	/**
-	 * Inserts a new invite record into the invites table with the specified
-	 * invite code and role.
-	 * 
-	 * @param code the invite code to be stored.
-	 * @param role the role associated with the invite code.
-	 * @throws SQLException if there is an error executing the insert command.
-	 */
-	public void inviteUser(String code, String role) throws SQLException {
-		String insertInvite = "INSERT INTO invites (code, role) VALUES (?, ?)";
-		try (PreparedStatement pstmt = connection.prepareStatement(insertInvite)) {
-			pstmt.setString(1, code);
-			pstmt.setString(2, role);
-			pstmt.executeUpdate();
-		}
-	}
-
-	/**
-	 * Checks if an invite code exists in the invites table. 
-	 * 
-	 * @param code the invite code to be checked.
-	 * @return true if the invite code exists, false otherwise.
-	 * @throws SQLException if there is an error executing the query.
-	 */
-	public boolean doesInviteExist(String code) throws SQLException{
-		String query = "SELECT COUNT(*) FROM invites WHERE code = ?";
-	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-	        
-	        pstmt.setString(1, code);
-	        ResultSet rs = pstmt.executeQuery();
-	        
-	        if (rs.next()) {
-	            // If the count is greater than 0, the user exists
-	            return rs.getInt(1) > 0;
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return false; // If an error occurs, assume user doesn't exist
-	}
-
-	/**
-	 * Retrieves the role associated with a given invite code from the invites table.
-	 * 
-	 * @param code the invite code for which the role is to be retrieved.
-	 * @return the role associated with the invite code, or null if not found.
-	 * @throws SQLException if there is an error executing the query.
-	 */
-	public String getRole(String code) throws SQLException{
-		String role = null;
-		String query = "SELECT * FROM invites WHERE code = ? ";
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, code);
-			try (ResultSet rs = pstmt.executeQuery()) {
-				while(rs.next()) {
-					return rs.getString("role");
-				}
-			}
-		
-		}
-		return role; 
-	}
-
-	/**
-	 * Removes an invite record from the invites table based on the provided invite code.
-	 * 
-	 * @param code the invite code of the record to be removed.
-	 * @throws SQLException if there is an error executing the delete command.
-	 */
-	public void removeInvite(String code) throws SQLException{
-		String query = "DELETE FROM invites WHERE code = ?";
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, code);
-			pstmt.executeUpdate();
-		}
-	}
 	
 	/**
 	 * Removes a user record from the cse360users table based on the provided username.
@@ -382,9 +305,102 @@ class DatabaseHelper {
 			se.printStackTrace(); 
 		} 
 	}
-
-///////// Switch Role Functions
 	
+	
+	
+
+	
+/** Invite User Functions */
+
+	/**
+	 * Inserts a new invite record into the invites table with the specified
+	 * invite code and role.
+	 * 
+	 * @param code the invite code to be stored.
+	 * @param role the role associated with the invite code.
+	 * @throws SQLException if there is an error executing the insert command.
+	 */
+	public void inviteUser(String code, String role) throws SQLException {
+		String insertInvite = "INSERT INTO invites (code, role) VALUES (?, ?)";
+		try (PreparedStatement pstmt = connection.prepareStatement(insertInvite)) {
+			pstmt.setString(1, code);
+			pstmt.setString(2, role);
+			pstmt.executeUpdate();
+		}
+	}
+
+	/**
+	 * Checks if an invite code exists in the invites table. 
+	 * 
+	 * @param code the invite code to be checked.
+	 * @return true if the invite code exists, false otherwise.
+	 * @throws SQLException if there is an error executing the query.
+	 */
+	public boolean doesInviteExist(String code) throws SQLException{
+		String query = "SELECT COUNT(*) FROM invites WHERE code = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        
+	        pstmt.setString(1, code);
+	        ResultSet rs = pstmt.executeQuery();
+	        
+	        if (rs.next()) {
+	            // If the count is greater than 0, the user exists
+	            return rs.getInt(1) > 0;
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return false; // If an error occurs, assume user doesn't exist
+	}
+
+	/**
+	 * Retrieves the role associated with a given invite code from the invites table.
+	 * 
+	 * @param code the invite code for which the role is to be retrieved.
+	 * @return the role associated with the invite code, or null if not found.
+	 * @throws SQLException if there is an error executing the query.
+	 */
+	public String getRole(String code) throws SQLException{
+		String role = null;
+		String query = "SELECT * FROM invites WHERE code = ? ";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, code);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while(rs.next()) {
+					return rs.getString("role");
+				}
+			}
+		
+		}
+		return role; 
+	}
+
+	/**
+	 * Removes an invite record from the invites table based on the provided invite code.
+	 * 
+	 * @param code the invite code of the record to be removed.
+	 * @throws SQLException if there is an error executing the delete command.
+	 */
+	public void removeInvite(String code) throws SQLException{
+		String query = "DELETE FROM invites WHERE code = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, code);
+			pstmt.executeUpdate();
+		}
+	}
+	
+	
+	
+
+
+/** Switch Role Functions */
+	
+	/**
+	 * Changes the role of a given user to a specified new role, currently in use
+	 * by the admin for their Switch Role access.
+	 * 
+	 * @throws SQLException if there is an error executing the SQL query.
+	 */
 public void changeRole(String username, String newRole) throws SQLException {
 	String sql = "UPDATE cse360users SET role = ? WHERE username = ?";
 	    
@@ -395,10 +411,22 @@ public void changeRole(String username, String newRole) throws SQLException {
 
     }
 }
+
+
+
+
+
 	
-///////// Reset Functions 
-	
-	
+/*** Reset Functions */
+
+	/**
+	 * Resets a users password to a one time password given by the admin 
+	 * in order to reset the users account, expiration date is also given and 
+	 * boolean oneTimePassword is set to true to indicate that the password 
+	 * currently tied to the user is a one-time password.
+	 * 
+	 * @throws SQLException if there is an error executing the SQL query.
+	 */
 public void resetUserPassword(String username, String password, Date expiration) throws SQLException {
 	String sql = "UPDATE cse360users SET password = ?, passwordExpired = ?, oneTimePassword = true WHERE username = ?";
 	
@@ -411,6 +439,12 @@ public void resetUserPassword(String username, String password, Date expiration)
 	
 }
 
+	/**
+	 * Checks to see if a username's password is valid without requiring a role
+	 * to be checked. 
+	 * 
+	 * @throws SQLException if there is an error executing the SQL query.
+	 */
 public boolean isPasswordValid(String username, String password) throws SQLException {
     boolean isValid = false;
     String sql = "SELECT FROM cse360users WHERE username = ? AND password = ? AND oneTimePassword = true";
@@ -430,6 +464,14 @@ public boolean isPasswordValid(String username, String password) throws SQLExcep
     return isValid;
 }
 
+
+	/**
+	 * Retrieves the expiration date for the users one time password
+	 * to be checked against the current date and verify that the 
+	 * password is not expired. 
+	 * 
+	 * @throws SQLException if there is an error executing the SQL query.
+	 */
 public Date getDate(String username) throws SQLException{
 	Date expire = null;
 	String query = "SELECT * FROM cse360users WHERE username = ? ";
@@ -445,6 +487,12 @@ public Date getDate(String username) throws SQLException{
 	return expire; 
 }
 
+	/**
+	 * Changes a users password to a different password given the username 
+	 * and the new password.
+	 * 
+	 * @throws SQLException if there is an error executing the SQL query.
+	 */
 public void updatePassword(String username, String givenPassword) throws SQLException {
     String sql = "UPDATE cse360users SET password = ? WHERE username = ?";
     
@@ -456,6 +504,12 @@ public void updatePassword(String username, String givenPassword) throws SQLExce
     }
 }
 
+	/**
+	 * Sets the boolean oneTimePassword to false to indicate that the 
+	 * user's current password is no longer a one time password.
+	 * 
+	 * @throws SQLException if there is an error executing the SQL query.
+	 */
 public void oneTimePasswordUsed(String username) throws SQLException {
     String sql = "UPDATE cse360users SET oneTimePassword = false WHERE username = ?";
 
@@ -465,7 +519,12 @@ public void oneTimePasswordUsed(String username) throws SQLException {
     }
 }
 
-public String getRoleID(String username) throws SQLException{
+	/**
+	 * Retrieves a users role given their username. 
+	 * 
+	 * @throws SQLException if there is an error executing the SQL query.
+	 */
+public String getRoleFrom(String username) throws SQLException{
 	String role = null;
 	String query = "SELECT * FROM cse360users WHERE username = ? ";
 	try (PreparedStatement pstmt = connection.prepareStatement(query)) {
