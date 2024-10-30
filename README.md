@@ -1,2 +1,2 @@
 # CSE360GroupTu37
-Group Project Phase 1
+Group Project Phase 2
