@@ -1,3 +1,5 @@
+
+
 /**
  * The DatabaseHelper class provides methods for interacting with the database
  * used by the StartCSE360.java system application. It is responsible for managing 
@@ -15,17 +17,26 @@
  * ensuring efficient data management and retrieval for a smooth user experience 
  * in the help system.
  * 
- * @version 1.0
- * @date October 8, 2024
+ * @version 2.0
+ * @date October 30, 2024
  */
 
-package simpleDatabase;
-import java.sql.*;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+
+package simpleDatabase;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.sql.*;
+//import java.util.Base64;
+import java.util.UUID;
+
+//import org.bouncycastle.util.Arrays;
+
+//import Encryption.EncryptionUtils;
+
+//import Encryption.EncryptionUtils;
 
 
 class DatabaseHelper {
@@ -57,6 +68,9 @@ class DatabaseHelper {
 	 * 
 	 * @throws SQLException if there is an error connecting to the database.
 	 */
+	
+	
+	
 	public void connectToDatabase() throws SQLException {
 		try {
 			Class.forName(JDBC_DRIVER); // Load the JDBC driver
@@ -64,6 +78,7 @@ class DatabaseHelper {
 			connection = DriverManager.getConnection(DB_URL, USER, PASS);
 			statement = connection.createStatement(); 
 			createTables(); 
+			createHelpTable();
 			// Create the necessary tables if they don't exist
 		} catch (ClassNotFoundException e) {
 			System.err.println("JDBC Driver not found: " + e.getMessage());
@@ -104,6 +119,43 @@ class DatabaseHelper {
 		
 		statement.execute(inviteTable);
 	}
+
+	
+	private long generateUniqueID()
+	{
+		long value = UUID.randomUUID().getMostSignificantBits();
+		return value;
+	}
+	
+	
+	/**
+	 * Creates the necessary tables in the database if they do not already exist. 
+	 * This includes an article Table.
+	 * 
+	 * @throws SQLException if there is an error executing SQL commands.
+	 */
+	private void createHelpTable() throws SQLException {
+		//String destroy = "DROP TABLE IF EXISTS Articles ";
+		//statement.execute(destroy);
+		
+		String articlesTable = "CREATE TABLE IF NOT EXISTS Articles ("
+                + "id INT PRIMARY KEY AUTO_INCREMENT, "
+                + "title VARCHAR(255) NOT NULL, "
+                + "description VARCHAR(500), "
+                + "body TEXT, "
+                + "level VARCHAR(255) CHECK (level IN ('beginner', 'intermediate', 'advanced', 'expert')), "
+                + "groupIdentifier VARCHAR(100), "
+                + "keywords VARCHAR(500), "
+                + "accessLevel VARCHAR(255) DEFAULT 'public' CHECK (accessLevel IN ('public', 'restricted')), "
+                + "other VARCHAR(500), "
+                + "links_misc VARCHAR(500), "
+                + "uniqueID BIGINT UNIQUE"
+                + ")";
+        statement.execute(articlesTable);
+        
+	}
+	
+	
 	
 	
 	/** ------------ Database Basic Functions  ------------ */
@@ -137,7 +189,7 @@ class DatabaseHelper {
 	 * @param skillLevel the skill level of the new user (e.g., Advanced, Intermediate).
 	 * @throws SQLException if there is an error executing the insert command.
 	 */
-	public void register(String username, String password, String role, String email, String fullName, 
+	public boolean register(String username, String password, String role, String email, String fullName, 
 			String prefName, 
             boolean oneTimePassword, Date passwordExpired, String skillLevel) throws SQLException {
 		String insertUser = "INSERT INTO cse360users (username, password, role, email, fullName, prefName, "
@@ -154,8 +206,507 @@ class DatabaseHelper {
 		    pstmt.setString(9, skillLevel);
 			pstmt.executeUpdate();
 		}
+		return true;
 	}
 
+	
+	/** ------------ Article Help Methods  ------------ */
+	
+	/**
+	 * Adds article to database. Only available to instructor and admin.
+	 * 
+	 * @param title Title of the article 
+	 * @param description Description of the article
+	 * @param body Body of the article
+	 * @param level Writing level of the article
+	 * @param groupIdentifier Identifes which group the article belongs to
+	 * @param keywords The keywords of the article
+	 * @param accessLevel The access level of the article
+	 * @param other Other info needed
+	 * @param links Any links associated with the article
+	 * @throws SQLException if there is an error executing SQL commands.
+	 */
+	public void createHelpArticle(String title, String description, String body, String level, String groupIdentifier, 
+			String keywords, String accessLevel, String other, String links) throws SQLException
+	{
+		long uniqueID = generateUniqueID();
+		String insertArticle = "INSERT INTO Articles (title, description, body, level, groupIdentifier, keywords, accessLevel, other, links_misc, uniqueID) "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
+		
+		try (PreparedStatement pstmt = connection.prepareStatement(insertArticle))
+		{
+			pstmt.setString(1, title);
+			pstmt.setString(2, description);
+			pstmt.setString(3, body);
+			pstmt.setString(4, level);
+			pstmt.setString(5, groupIdentifier);
+		    pstmt.setString(6, keywords);
+		    pstmt.setString(7, accessLevel);
+		    pstmt.setString(8, other);
+		    pstmt.setString(9, links);
+		    pstmt.setLong(10, uniqueID);
+		    pstmt.executeUpdate();
+		} 
+	}
+	
+	
+	
+	/**
+	 * Lists the articles in database including ID, title, 
+	 * level, and group of the article.
+	 * 
+	 * @throws Exception
+	 */
+	public void listArticles() throws Exception{
+		String findArticle = "SELECT * FROM Articles"; 
+		Statement stmt = connection.createStatement();
+		ResultSet rs = stmt.executeQuery(findArticle); 
+
+		while(rs.next()) {  
+			int id  = rs.getInt("id"); 
+			String title = rs.getString("title"); 
+			String level = rs.getString("level");
+			String groupIdentifier = rs.getString("groupIdentifier");
+			
+			
+ 
+			System.out.print("ID: " + id); 
+			System.out.print(", Title: " + title); 
+			System.out.print(", Level: " + level);
+			System.out.print(", Group Identifier: " + groupIdentifier);
+			System.out.println();
+			
+		} 
+	}
+	
+	
+	
+	
+	/**
+	 * Displays article using ID. Only available to instructor and admin
+	 * 
+	 * @param id
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean displayArticle(int id) throws Exception {
+	    
+	    String query = "SELECT * FROM Articles WHERE id = ?";
+
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setInt(1, id);
+
+	        try (ResultSet rs = pstmt.executeQuery()) {
+	            if (!rs.next()) {
+	                return false;
+	            }
+
+	            int newid = rs.getInt("id");
+	            String title = rs.getString("title");
+	            String description = rs.getString("description");
+	            String body = rs.getString("body");
+	            String level = rs.getString("level");
+	            String groupIdentifier = rs.getString("groupIdentifier");
+	            String keywords = rs.getString("keywords");
+	            String accessLevel = rs.getString("accessLevel");
+	            String other = rs.getString("other");
+	            String links = rs.getString("links_misc");
+
+	            System.out.println("ID: " + newid);
+	            System.out.println("Title: " + title);
+	            System.out.println("Description: " + description);
+	            System.out.println("Body: " + body);
+	            System.out.println("Level: " + level);
+	            System.out.println("Group Identifier: " + groupIdentifier);
+	            System.out.println("Keywords: " + keywords);
+	            System.out.println("Access Level: " + accessLevel);
+	            System.out.println("Other: " + other);
+	            System.out.println("Links: " + links);
+	            return true;
+	        }
+	    }
+	}
+	
+	/**
+	 * Displays article using group. Only available to instructor and admin
+	 * 
+	 * @param groupIdentifier
+	 * @throws Exception
+	 */
+	public void displayArticleByGroup(String groupIdentifier) throws Exception {
+		    
+		    String query = "SELECT * FROM Articles WHERE groupIdentifier = ?";
+	
+		    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+		        pstmt.setString(1, groupIdentifier); 
+	
+		        try (ResultSet rs = pstmt.executeQuery()) {
+		        	
+						while(rs.next()) {
+	
+		                     int newid = rs.getInt("id");
+		                    String title = rs.getString("title");
+		                    String description = rs.getString("description");
+		                    String body = rs.getString("body");
+		                    String level = rs.getString("level");
+		                    String groupID = rs.getString("groupIdentifier");
+		                    String keywords = rs.getString("keywords");
+		                    String accessLevel = rs.getString("accessLevel");
+		                    String other = rs.getString("other");
+		                    String links = rs.getString("links_misc");
+		                    
+		                    
+		                    System.out.println("ID: " + newid);
+		                    System.out.println("Title: " + title);
+		                    System.out.println("Description: " + description);
+		                    System.out.println("Body: " + body);
+		                    System.out.println("Level: " + level);
+		                    System.out.println("Group Identifier: " + groupID);
+		                    System.out.println("Keywords: " + keywords);
+		                    System.out.println("Access Level: " + accessLevel);
+		                    System.out.println("Other: " + other);
+		                    System.out.println("Links: " + links);
+		                }
+		        }
+		    }
+		}
+	
+	
+	/**
+	 * Searches by keywords. For admin and Instructor.
+	 * 
+	 * @param keyword
+	 * @throws Exception
+	 */
+	public void searchKeyword(String keyword) throws Exception {
+	    
+	    String query = "SELECT id, title FROM Articles WHERE keywords LIKE ?";
+
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, "%" + keyword + "%"); 
+
+	        try (ResultSet rs = pstmt.executeQuery()) {
+					while(rs.next()) {
+	                    int id = rs.getInt("id");
+	                    String title = rs.getString("title");
+	                    System.out.println("ID: " + id + ", Title: " + title);
+	                }
+	        }
+	    }
+	}
+	
+	/**
+	 * Searches by keywords. For Student.
+	 * 
+	 * @param keyword
+	 * @throws Exception
+	 */
+	public void studentSearchKeyword(String keyword) throws Exception {
+	    
+	    String query = "SELECT id, title FROM Articles WHERE accessLevel = 'public' AND keywords LIKE ?";
+
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, "%" + keyword + "%"); 
+
+	        try (ResultSet rs = pstmt.executeQuery()) {
+					while(rs.next()) {
+	                    int id = rs.getInt("id");
+	                    String title = rs.getString("title");
+	                    System.out.println("ID: " + id + ", Title: " + title);
+	                }
+	        }
+	    }
+	}
+	
+	/**
+	 * Helper method or restoration that inserts articles into the database
+	 * given all the data.
+	 * 
+	 * @param title
+	 * @param description
+	 * @param body
+	 * @param level
+	 * @param groupIdentifier
+	 * @param keywords
+	 * @param accessLevel
+	 * @param other
+	 * @param links_misc
+	 * @param UID
+	 * @throws SQLException
+	 */
+	public void restorationAdd(String title, String description, String body, String level, String groupIdentifier, 
+			String keywords, String accessLevel, String other, String links_misc, long UID) throws SQLException
+	{
+			String insertArticle = "INSERT INTO Articles (title, description, body, level, groupIdentifier, keywords, accessLevel, other, links_misc, uniqueID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
+		
+		try (PreparedStatement pstmt = connection.prepareStatement(insertArticle))
+		{
+			pstmt.setString(1, title);
+			pstmt.setString(2, description);
+			pstmt.setString(3, body);
+			pstmt.setString(4, level);
+			pstmt.setString(5, groupIdentifier);
+		    pstmt.setString(6, keywords);
+		    pstmt.setString(7, accessLevel);
+		    pstmt.setString(8, other);
+		    pstmt.setString(9, links_misc);
+		    pstmt.setLong(10, UID);
+		    pstmt.executeUpdate();
+		} 
+	}
+	
+	
+	/**
+	 * Backs up the entire database into a given backup file. 
+	 * 
+	 * @param file
+	 * @throws Exception
+	 */
+	public void backupHelpSystemToFile(String file) throws Exception
+	{
+		String backup = "SELECT * FROM Articles";
+	    
+	    try(Statement stmt = connection.createStatement())
+	    {
+	    	ResultSet rs = stmt.executeQuery(backup);
+	    	BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+	    	
+	    	writer.write("Title, Description, Body, Level, Group Identifier, Keywords, Access Level, Other, Links, Unique ID");
+	        writer.newLine();
+	    	
+	    	while (rs.next()) {
+	            String title = rs.getString("title");
+	            String description = rs.getString("description");
+	            String body = rs.getString("body");
+	            String level = rs.getString("level");
+	            String groupIdentifier = rs.getString("groupIdentifier");
+	            String keywords = rs.getString("keywords");
+	            String accessLevel = rs.getString("accessLevel");
+	            String other = rs.getString("other");
+	            String links = rs.getString("links_misc");
+	            String uniqueID = rs.getString("uniqueID");
+	            
+	            writer.write(title + "," + description + "," + body + "," + level + "," +
+	                         groupIdentifier + "," + keywords + "," + accessLevel + "," + other + "," + links + "," + uniqueID);
+	            writer.newLine();
+	        }
+	    	
+	    	writer.close();
+	    	rs.close(); 
+	    }
+
+	}
+	
+	/**
+	 * Backs up only articles that belong to the group identifier
+	 * into a given file name. 
+	 * 
+	 * @param file
+	 * @param groupIdentifier
+	 * @throws Exception
+	 */
+	public void backUpGroupToFile(String file, String groupIdentifier) throws Exception {
+	    String backup = "SELECT * FROM Articles WHERE groupIdentifier = ?";
+
+	    try (PreparedStatement pstmt = connection.prepareStatement(backup)) {
+	        pstmt.setString(1, groupIdentifier); 
+
+	        ResultSet rs = pstmt.executeQuery();
+	        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+
+	        writer.write("Title, Description, Body, Level, Group Identifier, Keywords, Access Level, Other, Links");
+	        writer.newLine();
+
+	        while (rs.next()) {
+	            String title = rs.getString("title");
+	            String description = rs.getString("description");
+	            String body = rs.getString("body");
+	            String level = rs.getString("level");
+	            String groupID = rs.getString("groupIdentifier");
+	            String keywords = rs.getString("keywords");
+	            String accessLevel = rs.getString("accessLevel");
+	            String other = rs.getString("other");
+	            String links = rs.getString("links_misc");
+	            String uniqueID = rs.getString("uniqueID");
+
+	            writer.write(title + "," + description + "," + body + "," + level + "," +
+	                    groupID + "," + keywords + "," + accessLevel + "," + other + "," + links + "," + uniqueID);
+	            writer.newLine();
+	        }
+
+	        writer.close();
+	        rs.close(); 
+	    }
+	}
+	
+	/**
+	 * Deletes an article given its unique ID.
+	 * 
+	 * @param id
+	 * @return
+	 * @throws SQLException
+	 */
+	public boolean deleteArticle(int id) throws SQLException {
+	    String query = "DELETE FROM Articles WHERE id = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setInt(1, id);
+	        int rowsAffected = pstmt.executeUpdate();
+	        return rowsAffected > 0;
+		}
+	        
+	}
+	
+	/**
+	 * Deletes all articles from the database. Only 
+	 * for instructor and admin. 
+	 * 
+	 * @throws Exception
+	 */
+	public void deleteAll() throws Exception
+	{
+		String deleteAll = "DELETE FROM Articles";
+		try (PreparedStatement pstmt = connection.prepareStatement(deleteAll))
+		{
+			pstmt.executeUpdate();
+		}
+	}
+	
+	
+	/**
+	 * Restores a backup file after deleting all files from database. 
+	 * 
+	 * @param file
+	 * @throws Exception
+	 */
+	public void restoreSystem(String file) throws Exception {
+	    if (hasArticles()) {
+	        deleteAll();
+	    }
+
+	    String row;
+	    String delimiter = ",";
+
+	    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+	        reader.readLine(); 
+
+	        while ((row = reader.readLine()) != null) {
+	            String[] data = row.split(delimiter);
+
+	            if (data.length >= 9) {
+	                if (isValidLevel(data[3]) && isValidAccessLevel(data[6])) {
+	                    createHelpArticle( data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
+	                } else {
+	                    System.out.println("Invalid data in row (level/accessLevel constraints): " + row);
+	                }
+	            } else {
+	                System.out.println("Could not read row. Incorrect number of columns.");
+	            }
+	        }
+	    }
+	}
+
+	/**
+	 * Checks to see if an article is of a valid level type. 
+	 * 
+	 * @param level
+	 * @return
+	 */
+	private boolean isValidLevel(String level) {
+	    return level.compareTo("beginner") == 0 || level.compareTo("intermediate") == 0 || level.compareTo("advanced") == 0 || level.compareTo("expert") == 0;
+	}
+
+	
+	/**
+	 * Checks to see if an article is of a valid access level.
+	 * 
+	 * @param accessLevel
+	 * @return
+	 */
+	private boolean isValidAccessLevel(String accessLevel) {
+	    return accessLevel.compareTo("public") == 0 || accessLevel.compareTo("restricted") == 0;
+	}
+	
+	
+	/**
+	 * Checks to see if an article exists in the database
+	 * given an article title.
+	 * 
+	 * @param title
+	 * @return
+	 * @throws SQLException
+	 */
+	public boolean articleExists(String title) throws SQLException {
+		String query = "SELECT COUNT(*) FROM articles WHERE title = ?";
+		try (PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setString(1, title);
+			try (ResultSet result = statement.executeQuery()) {
+				if (result.next()) {
+					return result.getInt(1) > 0; 
+				}
+			}
+		}
+		return false;
+	}
+	
+	
+	/**
+	 * Checks to see if articles exist.
+	 * 
+	 * @return
+	 * @throws SQLException
+	 */
+	public boolean hasArticles() throws SQLException {
+	    String query = "SELECT COUNT(*) FROM Articles";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query);
+	         ResultSet rs = pstmt.executeQuery()) {
+	        if (rs.next()) {
+	            return rs.getInt(1) > 0;
+	        }
+	    }
+	    return false;
+	}
+
+	/**
+	 * Restores system if the database is not empty and makes sure no duplicates are made. 
+	 * Only instructor and admin.
+	 * 
+	 * @param file
+	 * @throws Exception
+	 */
+	public void restoreSystemExisting(String file) throws Exception {
+	    String row;
+	    String delimiter = ",";
+
+	    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+	        reader.readLine(); // Skip header
+
+	        while ((row = reader.readLine()) != null) {
+	            String[] data = row.split(delimiter);
+
+	            if (data.length >= 9) {
+	                if (isValidLevel(data[3]) && isValidAccessLevel(data[6])) {
+	                    if (!articleExists(data[9])) { 
+	                        long UID = Long.parseLong(data[9]);
+	                        restorationAdd(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], UID);
+	                    } else {
+	                        System.out.println("Duplicate uniqueID detected: " + data[9]);
+	                    }
+	                } else {
+	                    System.out.println("Invalid data in row (level/accessLevel constraints): " + row);
+	                }
+	            } else {
+	                System.out.println("Could not read row. Incorrect number of columns: " + row);
+	            }
+	        }
+	    }
+	}
+
+	
+
+
+	/** ------------ User Login and Database Functions  ------------ */
+	
+	
 	/**
 	 * Authenticates a user by checking their username, password, and role in the cse360users table.
 	 * 
@@ -207,10 +758,11 @@ class DatabaseHelper {
 	 * 
 	 * @throws SQLException if there is an error executing the SQL query.
 	 */
-	public void displayUsersByAdmin() throws SQLException{
+	public String displayUsersByAdmin() throws SQLException{
 		String sql = "SELECT * FROM cse360users"; 
 		Statement stmt = connection.createStatement();
 		ResultSet rs = stmt.executeQuery(sql); 
+		String output = "";
 
 		while(rs.next()) { 
 			// Retrieve by column name 
@@ -226,21 +778,22 @@ class DatabaseHelper {
 			String skill = rs.getString("skillLevel");
 
 			// Display values 
-			System.out.print("ID: " + id); 
-			System.out.print(", Username: " + username); 
-			System.out.print(", Pass: " + password); 
-			System.out.print(", Role: " + role); 
+			output += "ID: " + id;
+			output += ", Username: " + username; 
+			output += ", Pass: " + password; 
+			output += ", Role: " + role; 
 			if(role.compareTo("admin") != 0) {
-				System.out.print(", Email: " + email); 
-				System.out.print(", Full Name: " + fullName); 
-				System.out.print(", Pref Name: " + prefName); 
-				System.out.print(", One-Time Pass: " + oneTime); 
-				System.out.print(", Expire Date: " + expireDate); 
-				System.out.println(", Skill Level: " + skill); 
+				output += ", Email: " + email; 
+				output += ", Full Name: " + fullName; 
+				output += ", Pref Name: " + prefName; 
+				output += ", One-Time Pass: " + oneTime; 
+				output += ", Expire Date: " + expireDate; 
+				output += ", Skill Level: " + skill + "\n"; 
 			}else {
-				System.out.println();
+				output += "\n";
 			}
 		} 
+		return output;
 	}
 
 	/**
@@ -545,8 +1098,7 @@ class DatabaseHelper {
 			se.printStackTrace(); 
 		} 
 	}
-
+	
+	
 
 }
-
-
