@@ -12,8 +12,8 @@
  * This class connects to the DatabaseHelper for managing user data and ensures 
  * a seamless user experience in the help system.
  * 
- * @version 1.0
- * @date October 8, 2024
+ * @version 2.0
+ * @date October 30, 2024
  */
 
 package simpleDatabase;
@@ -22,6 +22,7 @@ import java.sql.*;
 import java.sql.Date;
 import java.util.Scanner;
 import java.time.*;
+import java.util.InputMismatchException;
 import java.time.format.DateTimeParseException;
 
 public class StartCSE360 {
@@ -34,8 +35,9 @@ public class StartCSE360 {
 	private static Date today = Date.valueOf(LocalDate.now());
 
 	
-	/** ------------ Main  ------------ */
 	
+	/** ------------ Main ------------ */
+
 	/**
  	* This method  establishes a connection to the database, ensuring that the 
 	* necessary resources are available for user management operations. 
@@ -67,7 +69,7 @@ public class StartCSE360 {
 	}
 	
 	
-	/** ------------ Empty Database Setup  ------------ */
+	/** ------------ Setup Database Admin ------------ */
 	
 	/**
 	 * This method prompts the user for an administrator username and password,
@@ -107,7 +109,7 @@ public class StartCSE360 {
 	}
 	
 	
-	/** ------------ Main Menu  ------------ */
+	/** ------------ Main Menu ------------ */
 	
 	/**
 	 * This method presents the user with options to log in as an administrator, 
@@ -164,6 +166,10 @@ public class StartCSE360 {
 	            break;
 	        case "6":
 	            databaseHelper.closeConnection();
+	            
+	            System.out.println("Exiting the program...");
+	            
+	            System.exit(0);
 	            break;
 	        default:
 	            System.out.println("Invalid choice. Please try again.");
@@ -173,8 +179,412 @@ public class StartCSE360 {
 	} 
 	
 	
-	/** ------------ Flow Functions  ------------ */
+	/** ------------ Article Flow ------------ */
+	
+	/**
+	 * Article Management System, acts as main menu for managing articles as an admin
+	 * or instructor. 
+	 * 
+	 * @throws SQLException
+	 */
+	private static void articleManage() throws SQLException {
+		boolean loggedOut = false;
+		
+		while (!loggedOut) {
+		System.out.println(" ---------------------------- ");
+		System.out.println("Article Management System");
+	    System.out.println("1. Create an Article");
+	    System.out.println("2. Display an Article");
+	    System.out.println("3. Delete an Article");
+	    System.out.println("4. Backup an Article");
+	    System.out.println("5. Restore an Article");
+	    System.out.println("6. Search an Article by Keywords");
+	    System.out.println("7. Go Back to Main Menu");
+	    System.out.print("Choose an option: ");
+	    String choice = scanner.nextLine();
+		
+	    switch (choice) {
+	    	case "1":
+                articleCreateManage();
+	    	case "2":
+	    		articleDisplayManage();
+	    	case "3":
+	    		articleDeleteManage();
+	    	case "4":
+	    		articleBackUpManage();
+	    	case "5":
+	    		articleRestoreManage();
+	    	case "6":
+	    		System.out.print("Enter the keyword to search for: ");
+                String keyword = scanner.nextLine();
+                try {
+                    databaseHelper.searchKeyword(keyword);
+                } catch (Exception e) {
+                    System.out.println("Error during keyword search: " + e.getMessage());
+                }
+                System.out.println(" ----------------------- ");
+                break;
+	    	case "7":
+	    		loggedOut = true;
+                System.out.println("Going Back to Main Menu...");
+                break;
+            default:
+                System.out.println("Invalid choice. Please try again.");
+                break;
+	    }
+	    	
+	    }
+		mainMenu();
+	}
+	
+	
+	/**
+	 * Creation for for articles, including input of title, description, body, 
+	 * level, access level, group, keywords, other info, and links!
+	 * 
+	 * @throws SQLException
+	 */
+	private static void articleCreateManage() throws SQLException{
+		System.out.print("Enter Article Title: ");
+        String title = scanner.nextLine();
+        System.out.print("Enter Article Description: ");
+        String description = scanner.nextLine();
+        System.out.print("Enter Article Body: ");
+        String body = scanner.nextLine();
 
+        String level;
+        while (true) {
+            System.out.print("Enter Article Level (b: beginner, i: intermediate, a: advanced, e: expert): ");
+            String levelInput = scanner.nextLine().trim().toLowerCase();
+            switch (levelInput) {
+                case "b":
+                    level = "beginner";
+                    break;
+                case "i":
+                    level = "intermediate";
+                    break;
+                case "a":
+                    level = "advanced";
+                    break;
+                case "e":
+                    level = "expert";
+                    break;
+                default:
+                    System.out.println("Invalid input. Please enter 'b', 'i', 'a', or 'e'.");
+                    continue;
+            }
+            break;
+        }
+
+        System.out.print("Enter Group Identifier: ");
+        String groupIdentifier = scanner.nextLine();
+
+        System.out.print("Enter Article Keywords: ");
+        String keywords = scanner.nextLine();
+
+        String accessLevel;
+        while (true) {
+            System.out.print("Enter Access Level (p: public, r: restricted): ");
+            String accessLevelInput = scanner.nextLine().trim().toLowerCase();
+            switch (accessLevelInput) {
+                case "p":
+                    accessLevel = "public";
+                    break;
+                case "r":
+                    accessLevel = "restricted";
+                    break;
+                default:
+                    System.out.println("Invalid input. Please enter 'p' or 'r'.");
+                    continue;
+            }
+            break;
+        }
+
+        System.out.print("Enter Other Details: ");
+        String other = scanner.nextLine();
+
+        System.out.print("Enter Links: ");
+        String links = scanner.nextLine();
+
+        databaseHelper.createHelpArticle(title, description, body, level, groupIdentifier, keywords, accessLevel, other, links);
+        System.out.println("Article Created Successfully!");
+        System.out.println(" ---------------------------- ");
+        
+        articleManage();
+	}
+	
+	
+	/**
+	 * Display article manager, can view article by ID, group, or list them out in a shortened 
+	 * fashion. 
+	 * 
+	 * @throws SQLException
+	 */
+	private static void articleDisplayManage() throws SQLException {
+		boolean loggedOut = false;
+		
+		while (!loggedOut) {
+		System.out.println(" ---------------------------- ");
+	    System.out.println("1. View an Article by ID");
+	    System.out.println("2. Display Articles by Group");
+	    System.out.println("3. List All Articles");
+	    System.out.println("4. Go Back");
+	    System.out.print("Choose an option: ");
+	    String choice = scanner.nextLine();
+	    
+	    switch (choice) {
+    	case "1":
+    		if (!databaseHelper.hasArticles()) {
+                System.out.println("There are no articles at the moment.");
+                System.out.println(" ----------------------- ");
+                break;
+            }
+
+            System.out.print("Enter the ID of the article to display: ");
+            try {
+                int articleID = scanner.nextInt();
+                scanner.nextLine(); // Clear newline character
+                
+                try {
+                    if (!databaseHelper.displayArticle(articleID)) {
+                        System.out.println("Invalid ID: This article does not exist.");
+                    }
+                } catch (SQLException e) {
+                    System.out.println("An error occurred while retrieving the article: " + e.getMessage());
+                } catch (Exception e) {
+                    System.out.println("An error occurred while retrieving the article: " + e.getMessage());
+            }
+                
+            }catch (InputMismatchException e) {
+                    System.out.println("Invalid input. Please enter a valid numeric ID.");
+                    scanner.nextLine();
+            }
+
+            System.out.println(" ----------------------- ");
+            break;
+    	case "2":
+    		System.out.print("Enter Group Identifier: ");
+            String groupIdentify = scanner.nextLine();
+            try {
+                databaseHelper.displayArticleByGroup(groupIdentify); 
+            } catch (SQLException e) {
+                System.out.println("An error occurred while trying to display group articles. Please check if the Identifier exists.");
+            } catch (Exception e) {
+                System.out.println("Error displaying articles by group: " + e.getMessage());
+            }
+            System.out.println(" ----------------------- ");
+            break;
+    	case "3":
+    		try { databaseHelper.listArticles();
+        	System.out.println(" ----------------------- ");
+            break;
+        	} catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number for the Article ID.");
+                System.out.println(" ----------------------- ");
+            } catch (SQLException e) {
+                System.out.println("An error occurred while trying to delete the article. Please check if the ID exists.");
+                System.out.println(" ----------------------- ");
+            } catch (Exception e) {
+                System.out.println("An unexpected error occurred: " + e.getMessage());
+                System.out.println(" ----------------------- ");
+            }
+    	case "4":
+    		loggedOut = true;
+            System.out.println("Going Back...");
+            break;
+    	default:
+            System.out.println("Invalid choice. Please try again.");
+            break;
+	    }
+		}
+		articleManage();
+	    
+	}
+	
+	
+	/**
+	 * Article deletion manager. Can delete an article by ID, or you may delete all of them 
+	 * at the same time (purge). 
+	 * 
+	 * @throws SQLException
+	 */
+	private static void articleDeleteManage() throws SQLException {
+		boolean loggedOut = false;
+		
+		while (!loggedOut) {
+		System.out.println(" ---------------------------- ");
+	    System.out.println("1. Delete an Article by ID");
+	    System.out.println("2. Delete All Articles");
+	    System.out.println("3. Go Back");
+	    System.out.print("Choose an option: ");
+	    String choice = scanner.nextLine();
+	    
+	    switch (choice) {
+    	case "1":
+    		System.out.print("Enter Article ID to delete: ");
+            int idToDelete;
+            try {
+                idToDelete = Integer.parseInt(scanner.nextLine());
+
+                if (!databaseHelper.hasArticles()) {
+                    System.out.println("No articles at the moment.");
+                    System.out.println(" ---------------------------- ");
+                    break;
+                }
+
+                boolean isDeleted = databaseHelper.deleteArticle(idToDelete);
+                if (isDeleted) {
+                    System.out.println("Article Deleted.");
+                } else {
+                    System.out.println("Invalid ID: This article does not exist.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number for the Article ID.");
+            } catch (SQLException e) {
+                System.out.println("An error occurred while trying to delete the article. Please check if the ID exists.");
+            } catch (Exception e) {
+                System.out.println("An unexpected error occurred: " + e.getMessage());
+            }
+            System.out.println(" ----------------------- ");
+            break;
+    	case "2":
+    		String confirmation;
+            do {
+                System.out.print("Are you sure you want to delete all articles? (y/n): ");
+                confirmation = scanner.nextLine().trim().toLowerCase();
+                if (!confirmation.equals("y") && !confirmation.equals("n")) {
+                    System.out.println("Invalid input. Please enter 'y' for yes or 'n' for no.");
+                }
+            } while (!confirmation.equals("y") && !confirmation.equals("n"));
+
+            if (confirmation.equals("y")) {
+                try {
+                    databaseHelper.deleteAll();
+                    System.out.println("All articles are deleted.");
+                } catch (Exception e) {
+                    System.out.println("Error deleting articles: " + e.getMessage());
+                }
+            } else {
+                System.out.println("Deletion canceled."); 
+            }
+            System.out.println(" ----------------------- ");
+            break;
+    	case "3":
+    		loggedOut = true;
+            System.out.println("Going Back...");
+            break;
+    	default:
+            System.out.println("Invalid choice. Please try again.");
+            break;
+	    }
+		}
+		articleManage();
+	    
+	    
+	}
+	
+	
+	/**
+	 * Back up article manager, you can back up the entire database or by group identifier, 
+	 * and it will ask for the backup file name to be used. 
+	 * 
+	 * @throws SQLException
+	 */
+	private static void articleBackUpManage() throws SQLException {
+		boolean loggedOut = false;
+		
+		while (!loggedOut) {
+		System.out.println(" ---------------------------- ");
+	    System.out.println("1. BackUp All Articles");
+	    System.out.println("2. BackUp Articles by Group");
+	    System.out.println("3. Go Back");
+	    System.out.print("Choose an option: ");
+	    String choice = scanner.nextLine();
+	    
+	    switch (choice) {
+    	case "1":
+    		System.out.print("Enter the filename for backup (e.g., backup.csv): ");
+            String backupFile = scanner.nextLine();
+            try {
+                databaseHelper.backupHelpSystemToFile(backupFile);
+                System.out.println("Backup of the entire help system completed successfully.");
+            } catch (Exception e) {
+                System.out.println("Error during backup: " + e.getMessage());
+            }
+            System.out.println(" ----------------------- ");
+            break;
+    	case "2":
+    		System.out.print("Enter the group identifier for backup: ");
+            String groupIdentifierBackup = scanner.nextLine();
+            System.out.print("Enter the filename for backup (e.g., groupBackup.csv): ");
+            String groupBackupFile = scanner.nextLine();
+            try {
+                databaseHelper.backUpGroupToFile(groupBackupFile, groupIdentifierBackup);
+                System.out.println("Backup of group '" + groupIdentifierBackup + "' completed successfully.");
+            } catch (Exception e) {
+                System.out.println("Error during backup: " + e.getMessage());
+            }
+            System.out.println(" ----------------------- ");
+            break;
+    	case "3":
+    		loggedOut = true;
+            System.out.println("Going Back...");
+            break;
+    	default:
+            System.out.println("Invalid choice. Please try again.");
+            break;
+	    }
+		}
+		articleManage();
+	}
+	
+	private static void articleRestoreManage() throws SQLException {
+		boolean loggedOut = false;
+		
+		while (!loggedOut) {
+		System.out.println(" ---------------------------- ");
+	    System.out.println("1. Restore with Deleting");
+	    System.out.println("2. Restore without Deleting");
+	    System.out.println("3. Go Back");
+	    System.out.print("Choose an option: ");
+	    String choice = scanner.nextLine();
+	    
+	    switch (choice) {
+    	case "1":
+    		System.out.print("Enter the filename to restore from: ");
+            String restoreFile = scanner.nextLine();
+            try {
+                databaseHelper.restoreSystem(restoreFile);
+                System.out.println("System restored successfully from " + restoreFile);
+            } catch (Exception e) {
+                System.out.println("Error during restoration: " + e.getMessage());
+            }
+            System.out.println(" ----------------------- ");
+            break;
+    	case "2":
+    		System.out.print("Enter the filename to restore existing from: ");
+            String restoreExistingFile = scanner.nextLine();
+            try {
+                databaseHelper.restoreSystemExisting(restoreExistingFile);
+                System.out.println("Existing system restored successfully from " + restoreExistingFile);
+            } catch (Exception e) {
+                System.out.println("Error during existing system restoration: " + e.getMessage());
+            }
+            System.out.println(" ----------------------- ");
+            break;
+    	case "3":
+    		loggedOut = true;
+            System.out.println("Going Back...");
+            break;
+    	default:
+            System.out.println("Invalid choice. Please try again.");
+            break;
+	    }
+		}
+		articleManage();
+	}
+
+	
 	/**
 	 * This method allows students to either register or log in to the system.
 	 * If the user chooses to register, it collects necessary details (username, 
@@ -397,6 +807,31 @@ public class StartCSE360 {
 	}
 	
 	/**
+	 * Manages the admin login process. The method prompts the user for the admin username 
+	 * and password. It checks the entered credentials against the database. If the login is 
+	 * successful, the user is directed to the admin home page where they can manage users 
+	 * and other administrative tasks. If the credentials are invalid, the method notifies the user 
+	 * and allows them to try again.
+	 * 
+	 * @throws SQLException If an error occurs during the login process or any database operations.
+	 */
+	private static void adminFlow() throws SQLException {
+		System.out.println("admin flow");
+		System.out.print("Enter Admin Username: ");
+		String username = scanner.nextLine();
+		System.out.print("Enter Admin Password: ");
+		String password = scanner.nextLine();
+		if (databaseHelper.login(username, password, "admin")) {
+			System.out.println("Admin login successful.");
+			System.out.println();
+			adminHome();
+
+		} else {
+			System.out.println("Invalid admin credentials. Try again!!");
+		}
+	}
+	
+	/**
 	 * Manages the reset password process where the user 
 	 * has been given a one-time password, checks the date 
 	 * against the expiration date and allows for creation
@@ -423,7 +858,7 @@ public class StartCSE360 {
 				System.out.println(" -------------------------------------------------- ");
 				mainMenu();
 			}else {
-				String role = databaseHelper.getRoleFrom(username);
+				String role = databaseHelper.getRole(username);
 				
 				switch (role) {
 	            case "Student":
@@ -474,35 +909,6 @@ public class StartCSE360 {
 		}
 	}
 
-	
-	/**
-	 * Manages the admin login process. The method prompts the user for the admin username 
-	 * and password. It checks the entered credentials against the database. If the login is 
-	 * successful, the user is directed to the admin home page where they can manage users 
-	 * and other administrative tasks. If the credentials are invalid, the method notifies the user 
-	 * and allows them to try again.
-	 * 
-	 * @throws SQLException If an error occurs during the login process or any database operations.
-	 */
-	private static void adminFlow() throws SQLException {
-		System.out.println("admin flow");
-		System.out.print("Enter Admin Username: ");
-		String username = scanner.nextLine();
-		System.out.print("Enter Admin Password: ");
-		String password = scanner.nextLine();
-		if (databaseHelper.login(username, password, "admin")) {
-			System.out.println("Admin login successful.");
-			System.out.println();
-			adminHome();
-
-		} else {
-			System.out.println("Invalid admin credentials. Try again!!");
-		}
-	}
-	
-	
-	/** ------------ Home Pages ------------ */
-	
 	/**
 	 * Displays the admin home page, offering various management options including 
 	 * viewing all users, inviting new users, resetting accounts, deleting accounts, 
@@ -515,7 +921,7 @@ public class StartCSE360 {
 	 *                      within the selected options.
 	 */
 	private static void adminHome() throws SQLException {
-	    boolean loggedOut = false;
+		boolean loggedOut = false;
 	    System.out.println("Welcome to the Admin Home Page, ");
 	    System.out.println(" ---------------------------- ");
 	    while (!loggedOut) {
@@ -523,8 +929,9 @@ public class StartCSE360 {
 	        System.out.println("2. Invite User");
 	        System.out.println("3. Reset an Account");
 	        System.out.println("4. Delete an Account");
-	        System.out.println("5. Change a Users Role");
-	        System.out.println("6. Logout");
+	        System.out.println("5. Change a User's Role");
+	        System.out.println("6. Manage Articles");
+	        System.out.println("7. Logout");
 	        System.out.print("Please choose an option: ");
 
 	        String choice = scanner.nextLine();
@@ -544,7 +951,7 @@ public class StartCSE360 {
 	                System.out.println(" ----------------------- ");
 	                break;
 	            case "3":
-	                System.out.print("Input username to be reset: ");
+	            	System.out.print("Input username to be reset: ");
 	                String resetName = scanner.nextLine();
 	                if(databaseHelper.doesUserExist(resetName)) {
 	                	System.out.print("Enter One-Time Password: ");
@@ -569,7 +976,7 @@ public class StartCSE360 {
 	                }
 	                break;
 	            case "4":
-	                System.out.print("Enter Username for Account Deletion: ");
+	            	System.out.print("Enter Username for Account Deletion: ");
 	                String deleteUser = scanner.nextLine();
 	                if(databaseHelper.doesUserExist(deleteUser)) {
 	                	databaseHelper.removeUser(deleteUser);
@@ -581,7 +988,7 @@ public class StartCSE360 {
 	                }
 	                break;
 	            case "5":
-	                System.out.print("Enter user to be changed: ");
+	            	System.out.print("Enter user to be changed: ");
 	                String userToChange = scanner.nextLine();
 	                System.out.print("Enter S to change to Student, Enter I to change to Instructor: ");
 	                String newRole = scanner.nextLine();
@@ -611,15 +1018,14 @@ public class StartCSE360 {
 	                }
 	                break;
 	            case "6":
-	                loggedOut = true; // Set loggedOut to true to exit loop
+	            	articleManage();
+	            case "7":
+	                loggedOut = true;
 	                System.out.println("Logging out...");
-	                mainMenu();
-	                break;
-	            default:
-	                System.out.println("Invalid choice. Please try again.");
 	                break;
 	        }
 	    }
+	    mainMenu();
 	} 
 	
 	/**
@@ -638,18 +1044,29 @@ public class StartCSE360 {
 	        System.out.println("Please choose an option:");
 	        System.out.println("1. View Courses");
 	        System.out.println("2. View Grades");
-	        System.out.println("3. Logout");
+	        System.out.println("3. Search Article by Keyword");
+	        System.out.println("4. Logout");
 
 	        String choice = scanner.nextLine();
 
 	        switch (choice) {
-	            case "1": // Show Courses ( Not finished yet )
+	            case "1":
 	                System.out.println("Displaying courses...");
 	                break;
-	            case "2": // Show Grades ( Not finished yet )
+	            case "2":
 	                System.out.println("Displaying grades...");
 	                break;
-	            case "3": // Just log out simple
+	            case "3":
+	                System.out.print("Enter keyword to search: ");
+	                String keyword = scanner.nextLine();
+	                try {
+	                    databaseHelper.studentSearchKeyword(keyword);
+	                } catch (Exception e) {
+	                    System.out.println("An error occurred while searching for articles: " + e.getMessage());
+	                }
+	                System.out.println(" ----------------------- ");
+	                break;
+	            case "4":
 	                loggedOut = true;
 	                System.out.println("Logging out...");
 	                break;
@@ -661,6 +1078,7 @@ public class StartCSE360 {
 	  mainMenu();
 	}
 
+	
 	/**
 	 * Displays the instructor home page, currenly offering to view students, 
 	 * manage courses, or to logout. Logout is currently the only functional 
@@ -669,7 +1087,7 @@ public class StartCSE360 {
 	 * @throws SQLException If an error occurs during any of the database operations performed
 	 *                      within the selected options.
 	 */
-	private static void instructorHome() {
+	private static void instructorHome() throws SQLException{
 	    boolean loggedOut = false;
 	    System.out.println("Welcome to the Instructor Home Page, ");
 
@@ -677,7 +1095,8 @@ public class StartCSE360 {
 	        System.out.println("Please choose an option:");
 	        System.out.println("1. View Students");
 	        System.out.println("2. Manage Courses");
-	        System.out.println("3. Logout");
+	        System.out.println("3. Manage Articles");
+	        System.out.println("4. Logout");
 
 	        String choice = scanner.nextLine();
 
@@ -689,6 +1108,8 @@ public class StartCSE360 {
 	                System.out.println("Managing courses...");
 	                break;
 	            case "3":
+	            	articleManage();
+	            case "4":
 	                loggedOut = true; 
 	                System.out.println("Logging out...");
 	                break;
