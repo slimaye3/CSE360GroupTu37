@@ -486,8 +486,9 @@ class DatabaseHelper {
 	            String links = rs.getString("links_misc");
 	            String uniqueID = rs.getString("uniqueID");
 	            
-	            writer.write(title + "," + description + "," + body + "," + level + "," +
-	                         groupIdentifier + "," + keywords + "," + accessLevel + "," + other + "," + links + "," + uniqueID);
+	            writer.write(title + "&&" + description + "&&" + body + "&&" + level + "&&" +
+	                         groupIdentifier + "&&" + keywords + "&&" + accessLevel +
+	                         "&&" + other + "&&" + links + "&&" + uniqueID);
 	            writer.newLine();
 	        }
 	    	
@@ -529,8 +530,9 @@ class DatabaseHelper {
 	            String links = rs.getString("links_misc");
 	            String uniqueID = rs.getString("uniqueID");
 
-	            writer.write(title + "," + description + "," + body + "," + level + "," +
-	                    groupID + "," + keywords + "," + accessLevel + "," + other + "," + links + "," + uniqueID);
+	            writer.write(title + "&&" + description + "&&" + body + "&&" + level + "&&" +
+                        groupID + "&&" + keywords + "&&" + accessLevel +
+                        "&&" + other + "&&" + links + "&&" + uniqueID);
 	            writer.newLine();
 	        }
 
@@ -584,7 +586,7 @@ class DatabaseHelper {
 	    }
 
 	    String row;
-	    String delimiter = ",";
+	    String delimiter = "&&";
 
 	    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 	        reader.readLine(); 
@@ -675,7 +677,7 @@ class DatabaseHelper {
 	 */
 	public void restoreSystemExisting(String file) throws Exception {
 	    String row;
-	    String delimiter = ",";
+	    String delimiter = "&&";
 
 	    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 	        reader.readLine(); // Skip header
