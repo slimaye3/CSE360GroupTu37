@@ -12,1115 +12,1419 @@
  * This class connects to the DatabaseHelper for managing user data and ensures 
  * a seamless user experience in the help system.
  * 
- * @version 2.0
- * @date October 30, 2024
+ * @version 3.0
+ * @date November 16, 2024
  */
 
 package simpleDatabase;
 
-import java.sql.*;
-import java.sql.Date;
-import java.util.Scanner;
-import java.time.*;
-import java.util.InputMismatchException;
+
+import javafx.application.Application;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+import javafx.util.Pair;
+
+import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
+import java.sql.Date;
 
-public class StartCSE360 {
-	
-	/** ------------ Declarations ------------ */
-	
-	private static final DatabaseHelper databaseHelper = new DatabaseHelper(); //// Instance of DatabaseHelper for managing user data and database operations.
-	private static final Scanner scanner = new Scanner(System.in);
-	
-	private static Date today = Date.valueOf(LocalDate.now());
+/**
+ * The StartCSE360 class represents the main entry point for the CSE 360 application.
+ * It handles user logins and provides a graphical user interface for Admin, Instructor, and Student functionalities.
+ */
+public class StartCSE360 extends Application {
+    private DatabaseHelper databaseHelper;
 
-	
-	
-	/** ------------ Main ------------ */
+    /**
+     * Constructor to initialize the DatabaseHelper.
+     */
+    public StartCSE360() {
+        this.databaseHelper = new DatabaseHelper(); // Assume DatabaseHelper is correctly initialized
+    }
+    
+	/** ------------ Start Method for GUI  ------------ */
 
-	/**
- 	* This method  establishes a connection to the database, ensuring that the 
-	* necessary resources are available for user management operations. 
- 	* @throws SQLException If there is an error establishing a connection to the database.
- 	*/
-	public static void main( String[] args ) throws SQLException
-	{
-		System.out.println(today);
-		try { 
-			databaseHelper.connectToDatabase();  // Connect to the database
+    /**
+     * The start method is the main entry point for JavaFX applications.
+     *
+     * @param primaryStage the primary stage for this application
+     * @throws SQLException 
+     */
+    @Override
+    public void start(Stage primaryStage) throws SQLException {
+    	databaseHelper.connectToDatabase();
+    	
+        primaryStage.setTitle("CSE 360 - Welcome Page");
 
-			// Check if the database is empty (no users registered)
-			if (databaseHelper.isDatabaseEmpty()) {
-				System.out.println( "In-Memory Database  is empty" );
-				//set up administrator access
-				setupAdministrator();
+        /** Layout */
+        VBox layout = new VBox(10);
+        layout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Main Menu Buttons */
+        Button adminButton = new Button("Admin Login");
+        Button instructorButton = new Button("Instructor Login");
+        Button studentButton = new Button("Student Login");
+        Button adminRegisterButton = new Button("Admin Register");
+        Button studentRegisterButton = new Button("Student Register");
+        Button instructorRegisterButton = new Button("Instructor Register");
+
+        /** Set button actions */
+        adminButton.setOnAction(e -> {
+			try {
+				adminLogin();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
 			}
-			else {
-				mainMenu();
-			}
-		} catch (SQLException e) {
-			System.err.println("Database error: " + e.getMessage());
-			e.printStackTrace();
-		}
-		finally {
-			System.out.println("Good Bye!!");
-			databaseHelper.closeConnection();
-		}
-	}
-	
-	
-	/** ------------ Setup Database Admin ------------ */
-	
-	/**
-	 * This method prompts the user for an administrator username and password,
-	 * ensuring that the entered passwords match. Once the administrator details
-	 * are confirmed, it registers the administrator in the database using the 
-	 * DatabaseHelper class.
-	 *
-	 * @throws SQLException If an error occurs during database operations.
-	 */
-	private static void setupAdministrator() throws SQLException {
-		boolean matched = false;
-		String passwordfirst = null;
-		String password = null;
-		String email = null;
-		String fullName = null;
-		String prefName = null;
-		Date expire = null;
-		String skillLevel = "Intermediate";
-		System.out.println("Setting up the Administrator access.");
-		System.out.print("Enter Admin Username: ");
-		String username = scanner.nextLine();
-		while(!matched) {
-			System.out.print("Enter Admin Password: ");
-			passwordfirst = scanner.nextLine();
-			System.out.print("Enter Admin Password Again: ");
-			password = scanner.nextLine();
-			if(password.compareTo(passwordfirst) != 0) {
-				System.out.print("ERROR : Passwords must match.\n");	
-			}else {
-				matched = true;
-			}
-		}
-		databaseHelper.register(username, password, "admin", email, fullName, prefName, false, expire, skillLevel);
-		System.out.println("Administrator setup completed.");
-		mainMenu();
+		});
+        instructorButton.setOnAction(e -> instructorLogin());
+        studentButton.setOnAction(e -> studentLogin());
+        adminRegisterButton.setOnAction(e -> adminRegister());
+        studentRegisterButton.setOnAction(e -> studentRegister());
+        instructorRegisterButton.setOnAction(e -> instructorRegister());
 
-	}
-	
-	
-	/** ------------ Main Menu ------------ */
-	
-	/**
-	 * This method presents the user with options to log in as an administrator, 
-	 * instructor, student, or to enter an invitation code. Based on the user's 
-	 * choice, it directs the flow to the appropriate login method.
-	 */
-	private static void mainMenu() {
-		System.out.println(" ---------------------------- ");
-	    System.out.println("Welcome to the System");
-	    System.out.println("1. Admin Login");
-	    System.out.println("2. Instructor Flow");
-	    System.out.println("3. Student Flow");
-	    System.out.println("4. Invitation Code");
-	    System.out.println("5. One-Time Password Reset");
-	    System.out.println("6. Quit");
-	    System.out.print("Choose an option: ");
-	    String choice = scanner.nextLine();
-	    
-	    switch (choice) {
-	        case "1":
-	            try {
-	                adminFlow();
-	            } catch (SQLException e) {
-	                e.printStackTrace();
-	            }
-	            break;
-	        case "2":
-	            try {
-	                instructorFlow();
-	            } catch (SQLException e) {
-	                e.printStackTrace();
-	            }
-	            break;
-	        case "3":
-	            try {
-	                studentFlow();
-	            } catch (SQLException e) {
-	                e.printStackTrace();
-	            }
-	            break;
-	        case "4":
-	            try {
-	                inviteFlow();
-	            } catch (SQLException e) {
-	                e.printStackTrace();
-	            }
-	            break;
-	        case "5":
-	            try {
-	                resetFlow();
-	            } catch (SQLException e) {
-	                e.printStackTrace();
-	            }
-	            break;
-	        case "6":
-	            databaseHelper.closeConnection();
-	            
-	            System.out.println("Exiting the program...");
-	            
-	            System.exit(0);
-	            break;
-	        default:
-	            System.out.println("Invalid choice. Please try again.");
-	            mainMenu(); 
-	            break;
-	    }
-	} 
-	
-	
-	/** ------------ Article Flow ------------ */
-	
-	/**
+        // Add buttons to the layout
+        layout.getChildren().addAll(adminButton, instructorButton, studentButton, adminRegisterButton, studentRegisterButton, instructorRegisterButton);
+
+        // Create the scene
+        Scene scene = new Scene(layout, 300, 250);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    
+	/** ------------ Admin Methods  ------------ */
+
+    /**
+     * Displays the admin login page.
+     * @throws SQLException 
+     */
+    private void adminLogin() throws SQLException {
+        Stage loginStage = new Stage();
+        loginStage.setTitle("Admin Login Page");
+
+        VBox loginLayout = new VBox(10);
+        loginLayout.setPadding(new javafx.geometry.Insets(20));
+
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+
+        Button loginButton = new Button("Login");
+        Button backButton = new Button("Back to Main Menu");
+
+        loginButton.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            /** Validate credentials (implement login logic) */
+            try {
+				if (databaseHelper.login(username, password, "admin")) {
+				    adminHome();
+				    loginStage.close();
+				} else {
+				    showAlert("Error", "Invalid credentials!");
+				}
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+        });
+
+        backButton.setOnAction(e -> {
+            loginStage.close();
+            /** Redirect to main menu or another action */
+        });
+
+        loginLayout.getChildren().addAll(usernameField, passwordField, loginButton, backButton);
+
+        Scene loginScene = new Scene(loginLayout, 300, 200);
+        loginStage.setScene(loginScene);
+        loginStage.show();
+        
+        if(databaseHelper.isDatabaseEmpty()) {
+        	adminRegister();
+        }
+    }
+
+    /**
+     * Handles admin registration functionality.
+     * @throws SQLException 
+     */
+    private void adminRegister() {
+        Stage registerStage = new Stage();
+        registerStage.setTitle("Admin Registration Page");
+
+        VBox registerLayout = new VBox(10);
+        registerLayout.setPadding(new javafx.geometry.Insets(20));
+
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+        
+        PasswordField passwordField2 = new PasswordField();
+        passwordField2.setPromptText("Password Again");
+
+        Button registerButton = new Button("Register");
+        Button backButton = new Button("Back to Main Menu");
+
+        registerButton.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            String password2 = passwordField2.getText();
+            String email = null;
+    		String fullName = null;
+    		String prefName = null;
+    		Date expire = null;
+    		String skillLevel = "Intermediate";
+    		if(password.compareTo(password2) == 0) {
+    			/** Validate and register admin (implement registration logic) */
+                try {
+					if (databaseHelper.register(username, password, "admin", email, fullName, prefName, false, expire, skillLevel)) {
+					    showAlert("Success", "Admin registered successfully!");
+					    registerStage.close();
+					} else {
+					    showAlert("Error", "Registration failed!");
+					}
+				} catch (SQLException e1) {
+					
+					e1.printStackTrace();
+				}
+    		}else {
+    			showAlert("Error", "Passwords must match");
+    		}
+            
+        });
+
+        backButton.setOnAction(e -> {
+            registerStage.close();
+            /** Redirect to main menu or another action */
+        });
+
+        registerLayout.getChildren().addAll(usernameField, passwordField, passwordField2, registerButton, backButton);
+
+        Scene registerScene = new Scene(registerLayout, 300, 200);
+        registerStage.setScene(registerScene);
+        registerStage.show();
+    }
+    
+    
+	/** ------------ Login and Register  ------------ */
+
+    /**
+     * Handles the student login functionality.
+     *
+     */
+    private void studentLogin() {
+        Stage studentStage = new Stage();
+        studentStage.setTitle("Student Login Page");
+
+        VBox studentLayout = new VBox(10);
+        studentLayout.setPadding(new javafx.geometry.Insets(20));
+
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+
+        Button loginButton = new Button("Login");
+        Button backButton = new Button("Back to Main Menu");
+
+        loginButton.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            /** Validate credentials (implement login logic) */
+            try {
+				if (databaseHelper.login(username, password, "student")) {
+				    studentHome();
+				    studentStage.close();
+				} else {
+				    showAlert("Error", "Invalid credentials!");
+				}
+			} catch (SQLException e1) {
+				
+				e1.printStackTrace();
+			}
+        });
+
+        backButton.setOnAction(e -> {
+            studentStage.close();
+            /** Redirect to main menu or another action */
+        });
+
+        studentLayout.getChildren().addAll(usernameField, passwordField, loginButton, backButton);
+
+        Scene studentScene = new Scene(studentLayout, 300, 200);
+        studentStage.setScene(studentScene);
+        studentStage.show();
+    }
+
+    /**
+     * Handles student registration functionality.
+     *
+     */
+    private void studentRegister() {
+        Stage studentStage = new Stage();
+        studentStage.setTitle("Student Registration Page");
+
+        VBox studentLayout = new VBox(10);
+        studentLayout.setPadding(new javafx.geometry.Insets(20));
+
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+        
+        PasswordField passwordField2 = new PasswordField();
+        passwordField2.setPromptText("Password Again");
+        
+        TextField emailField = new TextField();
+        emailField.setPromptText("Email");
+        
+        TextField fullNameField = new TextField();
+        fullNameField.setPromptText("Full Name");
+        
+        TextField prefNameField = new TextField();
+        prefNameField.setPromptText("Preferred Name (Leave empty if N/A)");
+
+        Button registerButton = new Button("Register");
+        Button backButton = new Button("Back to Main Menu");
+
+        registerButton.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            String password2 = passwordField2.getText();
+            String email = emailField.getText();
+            String fullName = fullNameField.getText();
+            String prefName = prefNameField.getText();
+            Date expire = null;
+            String skillLevel = "Intermediate";
+            if(prefName.compareTo("") == 0) {
+            	prefName = "N/A";
+            }
+            if(password.compareTo(password2) == 0) {
+            	/** Validate credentials (implement login logic) */
+                try {
+					if (databaseHelper.register(username, password, "student", email, 
+							fullName, prefName, false, expire, skillLevel)) {
+					    instructorHome();
+					    studentStage.close();
+					} else {
+					    showAlert("Error", "Invalid credentials!");
+					}
+				} catch (SQLException e1) {
+
+					e1.printStackTrace();
+				}
+            }else {
+            	showAlert("Error", "Passwords must match");
+            }
+        });
+
+        backButton.setOnAction(e -> {
+            studentStage.close();
+            /** Redirect to main menu or another action */
+        });
+
+        studentLayout.getChildren().addAll(usernameField, passwordField, passwordField2, 
+        		emailField,fullNameField, prefNameField, registerButton, backButton);
+
+        Scene studentScene = new Scene(studentLayout, 300, 300);
+        studentStage.setScene(studentScene);
+        studentStage.show();
+    }
+
+    /**
+     * Handles instructor login functionality.
+     */
+    private void instructorRegister() {
+        Stage instructorStage = new Stage();
+        instructorStage.setTitle("Instructor Registration Page");
+
+        VBox instructorLayout = new VBox(10);
+        instructorLayout.setPadding(new javafx.geometry.Insets(20));
+
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+        
+        PasswordField passwordField2 = new PasswordField();
+        passwordField2.setPromptText("Password Again");
+        
+        TextField emailField = new TextField();
+        emailField.setPromptText("Email");
+        
+        TextField fullNameField = new TextField();
+        fullNameField.setPromptText("Full Name");
+        
+        TextField prefNameField = new TextField();
+        prefNameField.setPromptText("Preferred Name (Leave empty if N/A)");
+
+        Button registerButton = new Button("Register");
+        Button backButton = new Button("Back to Main Menu");
+
+        registerButton.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            String password2 = passwordField2.getText();
+            String email = emailField.getText();
+            String fullName = fullNameField.getText();
+            String prefName = prefNameField.getText();
+            Date expire = null;
+            String skillLevel = "Intermediate";
+            if(prefName.compareTo("") == 0) {
+            	prefName = "N/A";
+            }
+            if(password.compareTo(password2) == 0) {
+            	/** Validate credentials (implement register logic) */
+                try {
+					if (databaseHelper.register(username, password, "instructor", email, 
+							fullName, prefName, false, expire, skillLevel)) {
+					    instructorHome();
+					    instructorStage.close();
+					} else {
+					    showAlert("Error", "Invalid credentials!");
+					}
+				} catch (SQLException e1) {
+				
+					e1.printStackTrace();
+				}
+            }else {
+            	showAlert("Error", "Passwords must match");
+            }
+        });
+
+        backButton.setOnAction(e -> {
+            instructorStage.close();
+            /** Redirect to main menu or another action */
+        });
+
+        instructorLayout.getChildren().addAll(usernameField, passwordField, passwordField2, 
+        		emailField,fullNameField, prefNameField, registerButton, backButton);
+
+        Scene instructorScene = new Scene(instructorLayout, 300, 300);
+        instructorStage.setScene(instructorScene);
+        instructorStage.show();
+    }
+
+    /**
+     * Handles instructor registration functionality.
+     */
+    private void instructorLogin() {
+        Stage instructorStage = new Stage();
+        instructorStage.setTitle("Instructor Login Page");
+
+        VBox instructorLayout = new VBox(10);
+        instructorLayout.setPadding(new javafx.geometry.Insets(20));
+
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+
+        Button loginButton = new Button("Login");
+        Button backButton = new Button("Back to Main Menu");
+
+        loginButton.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            /** Validate credentials (implement login logic) */
+            try {
+				if (databaseHelper.login(username, password, "instructor")) {
+				    instructorHome();
+				    instructorStage.close();
+				} else {
+				    showAlert("Error", "Invalid credentials!");
+				}
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+        });
+
+        backButton.setOnAction(e -> {
+            instructorStage.close();
+            /** Redirect to main menu or another action */
+        });
+
+        instructorLayout.getChildren().addAll(usernameField, passwordField, loginButton, backButton);
+
+        Scene instructorScene = new Scene(instructorLayout, 300, 200);
+        instructorStage.setScene(instructorScene);
+        instructorStage.show();
+    }
+    
+    
+	/** ------------ Home Pages  ------------ */
+    
+    
+    /**
+     * Displays the admin home page with various functionalities.
+     * @throws SQLException 
+     */
+    private void adminHome() throws SQLException {
+        Stage adminStage = new Stage();
+        adminStage.setTitle("Admin Home Page");
+
+        /** Layout for Admin Home */
+        VBox adminLayout = new VBox(10);
+        adminLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Buttons for admin functionalities */
+        Button viewUsersButton = new Button("View All Users");
+        Button inviteUserButton = new Button("Invite User");
+        Button resetPasswordButton = new Button("Reset an Account");
+        Button deleteUserButton = new Button("Delete an Account");
+        Button changeUserRoleButton = new Button("Change a User's Role");
+        Button manageArticlesButton = new Button("Manage Articles");
+        Button logoutButton = new Button("Logout");
+
+        /** Set button actions */
+        viewUsersButton.setOnAction(e -> {
+            System.out.println("Displaying all users...");
+            try {
+				databaseHelper.displayUsersByAdmin();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+        });
+
+        inviteUserButton.setOnAction(e -> {
+            /** Create a new stage for role selection */
+            Stage inviteStage = new Stage();
+            inviteStage.setTitle("Invite User");
+
+            /** Radio buttons for role selection */
+            RadioButton studentRadio = new RadioButton("Student");
+            RadioButton instructorRadio = new RadioButton("Instructor");
+            ToggleGroup roleGroup = new ToggleGroup();
+            studentRadio.setToggleGroup(roleGroup);
+            instructorRadio.setToggleGroup(roleGroup);
+
+            /** Button to confirm the role selection */
+            Button confirmButton = new Button("Confirm");
+
+            /** Layout for the invite dialog */
+            VBox inviteLayout = new VBox(10, new Label("Select a Role:"), studentRadio, instructorRadio, confirmButton);
+            inviteLayout.setPadding(new javafx.geometry.Insets(20));
+            inviteLayout.setAlignment(Pos.CENTER);
+
+            /** Set confirm button action */
+            confirmButton.setOnAction(ev -> {
+                RadioButton selectedRole = (RadioButton) roleGroup.getSelectedToggle();
+                if (selectedRole != null) {
+                    String role = selectedRole.getText().toLowerCase();
+                    TextInputDialog codeDialog = new TextInputDialog();
+                    codeDialog.setTitle("User Code");
+                    codeDialog.setHeaderText("Enter the Code for the Invited User:");
+                    codeDialog.showAndWait().ifPresent(inviteCode -> {
+                        try {
+							databaseHelper.inviteUser(inviteCode, role);
+						} catch (SQLException e1) {
+
+							e1.printStackTrace();
+						}
+                        System.out.println("User invited with role: " + role + " and code: " + inviteCode);
+                    });
+                    inviteStage.close();
+                } else {
+                    System.out.println("Please select a role.");
+                }
+            });
+
+            /** Set up the stage and show */
+            Scene inviteScene = new Scene(inviteLayout, 300, 200);
+            inviteStage.setScene(inviteScene);
+            inviteStage.show();
+        });
+
+        resetPasswordButton.setOnAction(e -> {
+            TextInputDialog userDialog = new TextInputDialog();
+            userDialog.setTitle("Reset Account");
+            userDialog.setHeaderText("Input username to be reset:");
+            userDialog.showAndWait().ifPresent(resetName -> {
+                if (databaseHelper.doesUserExist(resetName)) {
+                    TextInputDialog otpDialog = new TextInputDialog();
+                    otpDialog.setTitle("Set One-Time Password");
+                    otpDialog.setHeaderText("Enter One-Time Password:");
+                    otpDialog.showAndWait().ifPresent(onetimepass -> {
+                        TextInputDialog dateDialog = new TextInputDialog();
+                        dateDialog.setTitle("Set Expiration Date");
+                        dateDialog.setHeaderText("Enter expiration date (YYYY-MM-DD):");
+                        dateDialog.showAndWait().ifPresent(expiration -> {
+                            try {
+                                LocalDate expireLocal = LocalDate.parse(expiration);
+                                Date expireDate = Date.valueOf(expireLocal);
+                                try {
+									databaseHelper.resetUserPassword(resetName, onetimepass, expireDate);
+								} catch (SQLException e1) {
+
+									e1.printStackTrace();
+								}
+                                System.out.println("One-time password set!");
+                            } catch (DateTimeParseException ex) {
+                                System.out.println("Invalid date format! Please follow format: YYYY-MM-DD");
+                            }
+                        });
+                    });
+                } else {
+                    System.out.println("User does not exist!");
+                }
+            });
+        });
+
+        deleteUserButton.setOnAction(e -> {
+            TextInputDialog deleteDialog = new TextInputDialog();
+            deleteDialog.setTitle("Delete Account");
+            deleteDialog.setHeaderText("Enter Username for Account Deletion:");
+            deleteDialog.showAndWait().ifPresent(deleteUser -> {
+                if (databaseHelper.doesUserExist(deleteUser)) {
+                    try {
+						databaseHelper.removeUser(deleteUser);
+					} catch (SQLException e1) {
+
+						e1.printStackTrace();
+					}
+                    System.out.println("User Removed.");
+                } else {
+                    System.out.println("User does not exist!");
+                }
+            });
+        });
+
+        changeUserRoleButton.setOnAction(e -> {
+            TextInputDialog userDialog = new TextInputDialog();
+            userDialog.setTitle("Change Role");
+            userDialog.setHeaderText("Enter user to be changed:");
+            userDialog.showAndWait().ifPresent(userToChange -> {
+                if (databaseHelper.doesUserExist(userToChange)) {
+                    TextInputDialog roleDialog = new TextInputDialog();
+                    roleDialog.setTitle("Change Role");
+                    roleDialog.setHeaderText("Enter S to change to Student, Enter I to change to Instructor:");
+                    roleDialog.showAndWait().ifPresent(newRole -> {
+                        switch (newRole.toUpperCase()) {
+                            case "S":
+							try {
+								databaseHelper.changeRole(userToChange, "student");
+							} catch (SQLException e1) {
+
+								e1.printStackTrace();
+							}
+                                System.out.println(userToChange + "'s role was changed to student.");
+                                break;
+                            case "I":
+							try {
+								databaseHelper.changeRole(userToChange, "instructor");
+							} catch (SQLException e1) {
+
+								e1.printStackTrace();
+							}
+                                System.out.println(userToChange + "'s role was changed to instructor.");
+                                break;
+                            default:
+                                System.out.println("Invalid Input.");
+                                break;
+                        }
+                    });
+                } else {
+                    System.out.println("User does not exist.");
+                }
+            });
+        });
+
+        manageArticlesButton.setOnAction(e -> {
+            try {
+				articleManage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+        });
+
+        logoutButton.setOnAction(e -> {
+            adminStage.close();
+            System.out.println("Logging out...");
+        });
+
+        /** Add buttons to the admin layout */
+        adminLayout.getChildren().addAll(
+            viewUsersButton, inviteUserButton, resetPasswordButton, 
+            deleteUserButton, changeUserRoleButton, manageArticlesButton, 
+            logoutButton
+        );
+
+        /** Create the scene */
+        Scene adminScene = new Scene(adminLayout, 400, 400);
+        adminStage.setScene(adminScene);
+        adminStage.show();
+    }
+    
+    
+    
+    /**
+     * Displays the student home page with specific functionalities.
+     */
+    private void studentHome() {
+        Stage studentHomeStage = new Stage();
+        studentHomeStage.setTitle("Student Home Page");
+
+        VBox studentLayout = new VBox(10);
+        studentLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Add student functionalities here */
+        Button viewGradesButton = new Button("View Grades");
+        Button enrollButton = new Button("Enroll in Course");
+        Button logoutButton = new Button("Logout");
+
+        viewGradesButton.setOnAction(e -> showAlert("Info", "Displaying grades..."));
+        enrollButton.setOnAction(e -> showAlert("Info", "Enrolling in course..."));
+        logoutButton.setOnAction(e -> {
+            studentHomeStage.close();
+            /** Redirect to main menu or login page if needed */
+        });
+
+        studentLayout.getChildren().addAll(viewGradesButton, enrollButton, logoutButton);
+
+        Scene studentHomeScene = new Scene(studentLayout, 300, 300);
+        studentHomeStage.setScene(studentHomeScene);
+        studentHomeStage.show();
+    }
+
+    /**
+     * Displays the instructor home page with specific functionalities.
+     */
+    private void instructorHome() {
+        Stage instructorHomeStage = new Stage();
+        instructorHomeStage.setTitle("Instructor Home Page");
+
+        VBox instructorLayout = new VBox(10);
+        instructorLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Add instructor functionalities here */
+        Button viewClassesButton = new Button("View Classes");
+        Button manageAssignmentsButton = new Button("Manage Assignments");
+        Button manageArticlesButton = new Button("Manage Articles");
+        Button logoutButton = new Button("Logout");
+
+        viewClassesButton.setOnAction(e -> showAlert("Info", "Displaying classes..."));
+        manageAssignmentsButton.setOnAction(e -> showAlert("Info", "Managing assignments..."));
+        manageArticlesButton.setOnAction(e -> {
+            try {
+				articleManage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+        });
+        logoutButton.setOnAction(e -> {
+            instructorHomeStage.close();
+            /** Redirect to main menu or login page if needed */
+        });
+
+        instructorLayout.getChildren().addAll(viewClassesButton, manageAssignmentsButton, logoutButton);
+
+        Scene instructorHomeScene = new Scene(instructorLayout, 300, 300);
+        instructorHomeStage.setScene(instructorHomeScene);
+        instructorHomeStage.show();
+    }
+    
+    
+    /** ------------ Article Managers  ------------ */
+    
+    /**
 	 * Article Management System, acts as main menu for managing articles as an admin
 	 * or instructor. 
 	 * 
 	 * @throws SQLException
 	 */
-	private static void articleManage() throws SQLException {
-		boolean loggedOut = false;
-		
-		while (!loggedOut) {
-		System.out.println(" ---------------------------- ");
-		System.out.println("Article Management System");
-	    System.out.println("1. Create an Article");
-	    System.out.println("2. Display an Article");
-	    System.out.println("3. Delete an Article");
-	    System.out.println("4. Backup an Article");
-	    System.out.println("5. Restore an Article");
-	    System.out.println("6. Search an Article by Keywords");
-	    System.out.println("7. Go Back to Main Menu");
-	    System.out.print("Choose an option: ");
-	    String choice = scanner.nextLine();
-		
-	    switch (choice) {
-	    	case "1":
-                articleCreateManage();
-	    	case "2":
-	    		articleDisplayManage();
-	    	case "3":
-	    		articleDeleteManage();
-	    	case "4":
-	    		articleBackUpManage();
-	    	case "5":
-	    		articleRestoreManage();
-	    	case "6":
-	    		System.out.print("Enter the keyword to search for: ");
-                String keyword = scanner.nextLine();
+    private void articleManage() throws SQLException{
+        Stage articleStage = new Stage();
+        articleStage.setTitle("Article Management System");
+
+        /** Layout for Article Management */
+        VBox articleLayout = new VBox(10);
+        articleLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Buttons for article management functionalities */
+        Button createArticleButton = new Button("Create an Article");
+        Button displayArticleButton = new Button("Display an Article");
+        Button deleteArticleButton = new Button("Delete an Article");
+        Button backupArticleButton = new Button("Backup an Article");
+        Button restoreArticleButton = new Button("Restore an Article");
+        Button searchArticleButton = new Button("Search an Article by Keywords");
+        Button backToMenuButton = new Button("Go Back to Main Menu");
+
+        /** Set button actions */
+        createArticleButton.setOnAction(e -> {
+			try {
+				articleCreateManage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+		});
+        displayArticleButton.setOnAction(e -> {
+			try {
+				articleDisplayManage();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		});
+        deleteArticleButton.setOnAction(e -> {
+			try {
+				articleDeleteManage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+		});
+        backupArticleButton.setOnAction(e -> {
+			try {
+				articleBackUpManage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+		});
+        restoreArticleButton.setOnAction(e -> {
+			try {
+				articleRestoreManage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+		});
+        searchArticleButton.setOnAction(e -> {
+            TextInputDialog searchDialog = new TextInputDialog();
+            searchDialog.setTitle("Search Article");
+            searchDialog.setHeaderText("Enter keyword to search:");
+            searchDialog.showAndWait().ifPresent(keyword -> {
                 try {
                     databaseHelper.searchKeyword(keyword);
-                } catch (Exception e) {
-                    System.out.println("Error during keyword search: " + e.getMessage());
+                    System.out.println("Search complete for keyword: " + keyword);
+                } catch (Exception ex) {
+                    System.out.println("Error during keyword search: " + ex.getMessage());
                 }
-                System.out.println(" ----------------------- ");
-                break;
-	    	case "7":
-	    		loggedOut = true;
-                System.out.println("Going Back to Main Menu...");
-                break;
-            default:
-                System.out.println("Invalid choice. Please try again.");
-                break;
-	    }
-	    	
-	    }
-		mainMenu();
-	}
-	
-	
-	/**
+            });
+        });
+
+        backToMenuButton.setOnAction(e -> {
+            articleStage.close();
+            System.out.println("Going Back to Main Menu...");
+            
+        });
+
+        /** Add buttons to the article layout */
+        articleLayout.getChildren().addAll(
+            createArticleButton, displayArticleButton, deleteArticleButton, 
+            backupArticleButton, restoreArticleButton, searchArticleButton, 
+            backToMenuButton
+        );
+
+        /** Create the scene */
+        Scene articleScene = new Scene(articleLayout, 400, 400);
+        articleStage.setScene(articleScene);
+        articleStage.show();
+    }
+    
+    /**
 	 * Creation for for articles, including input of title, description, body, 
 	 * level, access level, group, keywords, other info, and links!
 	 * 
 	 * @throws SQLException
 	 */
-	private static void articleCreateManage() throws SQLException{
-		System.out.print("Enter Article Title: ");
-        String title = scanner.nextLine();
-        System.out.print("Enter Article Description: ");
-        String description = scanner.nextLine();
-        System.out.print("Enter Article Body: ");
-        String body = scanner.nextLine();
+    private void articleCreateManage() throws SQLException{
+        Stage articleCreateStage = new Stage();
+        articleCreateStage.setTitle("Create Article");
 
-        String level;
-        while (true) {
-            System.out.print("Enter Article Level (b: beginner, i: intermediate, a: advanced, e: expert): ");
-            String levelInput = scanner.nextLine().trim().toLowerCase();
-            switch (levelInput) {
-                case "b":
-                    level = "beginner";
-                    break;
-                case "i":
-                    level = "intermediate";
-                    break;
-                case "a":
-                    level = "advanced";
-                    break;
-                case "e":
-                    level = "expert";
-                    break;
-                default:
-                    System.out.println("Invalid input. Please enter 'b', 'i', 'a', or 'e'.");
-                    continue;
+        /** Form Fields */
+        TextField titleField = new TextField();
+        titleField.setPromptText("Enter Article Title");
+
+        TextArea descriptionArea = new TextArea();
+        descriptionArea.setPromptText("Enter Article Description");
+        descriptionArea.setWrapText(true);
+
+        TextArea bodyArea = new TextArea();
+        bodyArea.setPromptText("Enter Article Body");
+        bodyArea.setWrapText(true);
+
+        /** Dropdown for Article Level */
+        ChoiceBox<String> levelChoiceBox = new ChoiceBox<>();
+        levelChoiceBox.getItems().addAll("Beginner", "Intermediate", "Advanced", "Expert");
+        levelChoiceBox.setValue("Beginner");
+
+        TextField groupField = new TextField();
+        groupField.setPromptText("Enter Group Identifier");
+
+        TextField keywordsField = new TextField();
+        keywordsField.setPromptText("Enter Article Keywords");
+
+        /** Dropdown for Access Level */
+        ChoiceBox<String> accessLevelChoiceBox = new ChoiceBox<>();
+        accessLevelChoiceBox.getItems().addAll("Public", "Restricted");
+        accessLevelChoiceBox.setValue("Public");
+
+        TextArea otherDetailsArea = new TextArea();
+        otherDetailsArea.setPromptText("Enter Other Details");
+        otherDetailsArea.setWrapText(true);
+
+        TextField linksField = new TextField();
+        linksField.setPromptText("Enter Links");
+
+        Button submitButton = new Button("Submit");
+        Button cancelButton = new Button("Cancel");
+
+        /** Form Layout */
+        GridPane formLayout = new GridPane();
+        formLayout.setPadding(new javafx.geometry.Insets(20));
+        formLayout.setHgap(10);
+        formLayout.setVgap(10);
+
+        formLayout.add(new Label("Title:"), 0, 0);
+        formLayout.add(titleField, 1, 0);
+        formLayout.add(new Label("Description:"), 0, 1);
+        formLayout.add(descriptionArea, 1, 1);
+        formLayout.add(new Label("Body:"), 0, 2);
+        formLayout.add(bodyArea, 1, 2);
+        formLayout.add(new Label("Level:"), 0, 3);
+        formLayout.add(levelChoiceBox, 1, 3);
+        formLayout.add(new Label("Group Identifier:"), 0, 4);
+        formLayout.add(groupField, 1, 4);
+        formLayout.add(new Label("Keywords:"), 0, 5);
+        formLayout.add(keywordsField, 1, 5);
+        formLayout.add(new Label("Access Level:"), 0, 6);
+        formLayout.add(accessLevelChoiceBox, 1, 6);
+        formLayout.add(new Label("Other Details:"), 0, 7);
+        formLayout.add(otherDetailsArea, 1, 7);
+        formLayout.add(new Label("Links:"), 0, 8);
+        formLayout.add(linksField, 1, 8);
+
+        HBox buttonLayout = new HBox(10, submitButton, cancelButton);
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        VBox mainLayout = new VBox(10, formLayout, buttonLayout);
+        mainLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Submit Button Action */
+        submitButton.setOnAction(e -> {
+            String title = titleField.getText().trim();
+            String description = descriptionArea.getText().trim();
+            String body = bodyArea.getText().trim();
+            String level = levelChoiceBox.getValue().toLowerCase();
+            String groupIdentifier = groupField.getText().trim();
+            String keywords = keywordsField.getText().trim();
+            String accessLevel = accessLevelChoiceBox.getValue().toLowerCase();
+            String otherDetails = otherDetailsArea.getText().trim();
+            String links = linksField.getText().trim();
+
+            if (title.isEmpty() || description.isEmpty() || body.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Validation Error");
+                alert.setHeaderText("Missing Required Fields");
+                alert.setContentText("Please ensure Title, Description, and Body are filled.");
+                alert.showAndWait();
+                return;
             }
-            break;
-        }
 
-        System.out.print("Enter Group Identifier: ");
-        String groupIdentifier = scanner.nextLine();
-
-        System.out.print("Enter Article Keywords: ");
-        String keywords = scanner.nextLine();
-
-        String accessLevel;
-        while (true) {
-            System.out.print("Enter Access Level (p: public, r: restricted): ");
-            String accessLevelInput = scanner.nextLine().trim().toLowerCase();
-            switch (accessLevelInput) {
-                case "p":
-                    accessLevel = "public";
-                    break;
-                case "r":
-                    accessLevel = "restricted";
-                    break;
-                default:
-                    System.out.println("Invalid input. Please enter 'p' or 'r'.");
-                    continue;
+            try {
+                databaseHelper.createHelpArticle(title, description, body, level, groupIdentifier, keywords, accessLevel, otherDetails, links);
+                System.out.println("Article Created Successfully!");
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Success");
+                successAlert.setHeaderText("Article Created");
+                successAlert.setContentText("The article has been created successfully.");
+                successAlert.showAndWait();
+                articleCreateStage.close();
+                articleManage(); // Return to the article management interface
+            } catch (SQLException ex) {
+                System.out.println("Error creating article: " + ex.getMessage());
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Database Error");
+                errorAlert.setHeaderText("Failed to Create Article");
+                errorAlert.setContentText("Error: " + ex.getMessage());
+                errorAlert.showAndWait();
             }
-            break;
-        }
+        });
 
-        System.out.print("Enter Other Details: ");
-        String other = scanner.nextLine();
+        /** Cancel Button Action */
+        cancelButton.setOnAction(e -> articleCreateStage.close());
 
-        System.out.print("Enter Links: ");
-        String links = scanner.nextLine();
+        /** Set the Scene and Show */
+        Scene articleCreateScene = new Scene(mainLayout, 600, 600);
+        articleCreateStage.setScene(articleCreateScene);
+        articleCreateStage.show();
+    }
 
-        databaseHelper.createHelpArticle(title, description, body, level, groupIdentifier, keywords, accessLevel, other, links);
-        System.out.println("Article Created Successfully!");
-        System.out.println(" ---------------------------- ");
-        
-        articleManage();
-	}
-	
-	
-	/**
+    
+    /**
 	 * Display article manager, can view article by ID, group, or list them out in a shortened 
 	 * fashion. 
 	 * 
 	 * @throws SQLException
 	 */
-	private static void articleDisplayManage() throws SQLException {
-		boolean loggedOut = false;
-		
-		while (!loggedOut) {
-		System.out.println(" ---------------------------- ");
-	    System.out.println("1. View an Article by ID");
-	    System.out.println("2. Display Articles by Group");
-	    System.out.println("3. List All Articles");
-	    System.out.println("4. Go Back");
-	    System.out.print("Choose an option: ");
-	    String choice = scanner.nextLine();
-	    
-	    switch (choice) {
-    	case "1":
-    		if (!databaseHelper.hasArticles()) {
-                System.out.println("There are no articles at the moment.");
-                System.out.println(" ----------------------- ");
-                break;
-            }
+    private void articleDisplayManage() throws SQLException{
+        Stage displayStage = new Stage();
+        displayStage.setTitle("Article Display Manager");
 
-            System.out.print("Enter the ID of the article to display: ");
+        /** Menu Buttons */
+        Button viewByIdButton = new Button("View Article by ID");
+        Button displayByGroupButton = new Button("Display Articles by Group");
+        Button listAllButton = new Button("List All Articles");
+        Button backButton = new Button("Go Back");
+
+        /** Layout */
+        VBox buttonLayout = new VBox(10, viewByIdButton, displayByGroupButton, listAllButton, backButton);
+        buttonLayout.setPadding(new javafx.geometry.Insets(20));
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        /** Scene Setup */
+        Scene displayScene = new Scene(buttonLayout, 400, 300);
+        displayStage.setScene(displayScene);
+        displayStage.show();
+
+        /** Button Actions */
+
+        /** 1. View Article by ID */
+        viewByIdButton.setOnAction(e -> {
             try {
-                int articleID = scanner.nextInt();
-                scanner.nextLine(); // Clear newline character
-                
+				if (!databaseHelper.hasArticles()) {
+				    Alert noArticlesAlert = new Alert(Alert.AlertType.INFORMATION);
+				    noArticlesAlert.setTitle("No Articles");
+				    noArticlesAlert.setHeaderText("No Articles Available");
+				    noArticlesAlert.setContentText("There are currently no articles in the system.");
+				    noArticlesAlert.showAndWait();
+				    return;
+				}
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+
+            /** Input Dialog for Article ID */
+            TextInputDialog idDialog = new TextInputDialog();
+            idDialog.setTitle("View Article by ID");
+            idDialog.setHeaderText("Enter the ID of the Article");
+            idDialog.setContentText("Article ID:");
+
+            idDialog.showAndWait().ifPresent(input -> {
                 try {
+                    int articleID = Integer.parseInt(input);
                     if (!databaseHelper.displayArticle(articleID)) {
-                        System.out.println("Invalid ID: This article does not exist.");
+                        Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
+                        invalidIdAlert.setTitle("Invalid ID");
+                        invalidIdAlert.setHeaderText("Article Not Found");
+                        invalidIdAlert.setContentText("No article exists with the provided ID.");
+                        invalidIdAlert.showAndWait();
                     }
-                } catch (SQLException e) {
-                    System.out.println("An error occurred while retrieving the article: " + e.getMessage());
-                } catch (Exception e) {
-                    System.out.println("An error occurred while retrieving the article: " + e.getMessage());
-            }
-                
-            }catch (InputMismatchException e) {
-                    System.out.println("Invalid input. Please enter a valid numeric ID.");
-                    scanner.nextLine();
-            }
+                } catch (NumberFormatException ex) {
+                    Alert invalidInputAlert = new Alert(Alert.AlertType.ERROR);
+                    invalidInputAlert.setTitle("Invalid Input");
+                    invalidInputAlert.setHeaderText("Non-numeric ID Entered");
+                    invalidInputAlert.setContentText("Please enter a valid numeric ID.");
+                    invalidInputAlert.showAndWait();
+                } catch (SQLException ex) {
+                    showErrorDialog("Error Retrieving Article", "An error occurred while retrieving the article.", ex.getMessage());
+                } catch (Exception e1) {
 
-            System.out.println(" ----------------------- ");
-            break;
-    	case "2":
-    		System.out.print("Enter Group Identifier: ");
-            String groupIdentify = scanner.nextLine();
+					e1.printStackTrace();
+				}
+            });
+        });
+
+        /** 2. Display Articles by Group */
+        displayByGroupButton.setOnAction(e -> {
+            TextInputDialog groupDialog = new TextInputDialog();
+            groupDialog.setTitle("Display Articles by Group");
+            groupDialog.setHeaderText("Enter the Group Identifier");
+            groupDialog.setContentText("Group Identifier:");
+
+            groupDialog.showAndWait().ifPresent(group -> {
+                try {
+                    databaseHelper.displayArticleByGroup(group);
+                } catch (SQLException ex) {
+                    showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
+                } catch (Exception ex) {
+                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                }
+            });
+        });
+
+        /** 3. List All Articles */
+        listAllButton.setOnAction(e -> {
             try {
-                databaseHelper.displayArticleByGroup(groupIdentify); 
-            } catch (SQLException e) {
-                System.out.println("An error occurred while trying to display group articles. Please check if the Identifier exists.");
-            } catch (Exception e) {
-                System.out.println("Error displaying articles by group: " + e.getMessage());
+                databaseHelper.listArticles();
+            } catch (SQLException ex) {
+                showErrorDialog("Error Listing Articles", "An error occurred while listing all articles.", ex.getMessage());
+            } catch (Exception ex) {
+                showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
             }
-            System.out.println(" ----------------------- ");
-            break;
-    	case "3":
-    		try { databaseHelper.listArticles();
-        	System.out.println(" ----------------------- ");
-            break;
-        	} catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a valid number for the Article ID.");
-                System.out.println(" ----------------------- ");
-            } catch (SQLException e) {
-                System.out.println("An error occurred while trying to delete the article. Please check if the ID exists.");
-                System.out.println(" ----------------------- ");
-            } catch (Exception e) {
-                System.out.println("An unexpected error occurred: " + e.getMessage());
-                System.out.println(" ----------------------- ");
-            }
-    	case "4":
-    		loggedOut = true;
-            System.out.println("Going Back...");
-            break;
-    	default:
-            System.out.println("Invalid choice. Please try again.");
-            break;
-	    }
-		}
-		articleManage();
-	    
-	}
-	
-	
-	/**
+        });
+
+        /** 4. Go Back */
+        backButton.setOnAction(e -> {
+            displayStage.close();
+            /** Return to article management interface */
+        });
+    }
+
+    
+    /**
 	 * Article deletion manager. Can delete an article by ID, or you may delete all of them 
 	 * at the same time (purge). 
 	 * 
 	 * @throws SQLException
 	 */
-	private static void articleDeleteManage() throws SQLException {
-		boolean loggedOut = false;
-		
-		while (!loggedOut) {
-		System.out.println(" ---------------------------- ");
-	    System.out.println("1. Delete an Article by ID");
-	    System.out.println("2. Delete All Articles");
-	    System.out.println("3. Go Back");
-	    System.out.print("Choose an option: ");
-	    String choice = scanner.nextLine();
-	    
-	    switch (choice) {
-    	case "1":
-    		System.out.print("Enter Article ID to delete: ");
-            int idToDelete;
+    private void articleDeleteManage() throws SQLException{
+        Stage deleteStage = new Stage();
+        deleteStage.setTitle("Article Deletion Manager");
+
+        /** Menu Buttons */
+        Button deleteByIdButton = new Button("Delete an Article by ID");
+        Button deleteAllButton = new Button("Delete All Articles");
+        Button backButton = new Button("Go Back");
+
+        /** Layout */
+        VBox buttonLayout = new VBox(10, deleteByIdButton, deleteAllButton, backButton);
+        buttonLayout.setPadding(new javafx.geometry.Insets(20));
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        /** Scene Setup */
+        Scene deleteScene = new Scene(buttonLayout, 400, 300);
+        deleteStage.setScene(deleteScene);
+        deleteStage.show();
+
+        /** Button Actions */
+
+        /** 1. Delete Article by ID */
+        deleteByIdButton.setOnAction(e -> {
             try {
-                idToDelete = Integer.parseInt(scanner.nextLine());
+				if (!databaseHelper.hasArticles()) {
+				    Alert noArticlesAlert = new Alert(Alert.AlertType.INFORMATION);
+				    noArticlesAlert.setTitle("No Articles");
+				    noArticlesAlert.setHeaderText("No Articles Available");
+				    noArticlesAlert.setContentText("There are currently no articles to delete.");
+				    noArticlesAlert.showAndWait();
+				    return;
+				}
+			} catch (SQLException e1) {
 
-                if (!databaseHelper.hasArticles()) {
-                    System.out.println("No articles at the moment.");
-                    System.out.println(" ---------------------------- ");
-                    break;
-                }
+				e1.printStackTrace();
+			}
 
-                boolean isDeleted = databaseHelper.deleteArticle(idToDelete);
-                if (isDeleted) {
-                    System.out.println("Article Deleted.");
-                } else {
-                    System.out.println("Invalid ID: This article does not exist.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a valid number for the Article ID.");
-            } catch (SQLException e) {
-                System.out.println("An error occurred while trying to delete the article. Please check if the ID exists.");
-            } catch (Exception e) {
-                System.out.println("An unexpected error occurred: " + e.getMessage());
-            }
-            System.out.println(" ----------------------- ");
-            break;
-    	case "2":
-    		String confirmation;
-            do {
-                System.out.print("Are you sure you want to delete all articles? (y/n): ");
-                confirmation = scanner.nextLine().trim().toLowerCase();
-                if (!confirmation.equals("y") && !confirmation.equals("n")) {
-                    System.out.println("Invalid input. Please enter 'y' for yes or 'n' for no.");
-                }
-            } while (!confirmation.equals("y") && !confirmation.equals("n"));
+            /** Input Dialog for Article ID */
+            TextInputDialog idDialog = new TextInputDialog();
+            idDialog.setTitle("Delete Article by ID");
+            idDialog.setHeaderText("Enter the ID of the Article to Delete");
+            idDialog.setContentText("Article ID:");
 
-            if (confirmation.equals("y")) {
+            idDialog.showAndWait().ifPresent(input -> {
+                try {
+                    int idToDelete = Integer.parseInt(input);
+
+                    boolean isDeleted = databaseHelper.deleteArticle(idToDelete);
+                    if (isDeleted) {
+                        Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                        successAlert.setTitle("Success");
+                        successAlert.setHeaderText("Article Deleted");
+                        successAlert.setContentText("The article with ID " + idToDelete + " has been deleted.");
+                        successAlert.showAndWait();
+                    } else {
+                        Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
+                        invalidIdAlert.setTitle("Invalid ID");
+                        invalidIdAlert.setHeaderText("Article Not Found");
+                        invalidIdAlert.setContentText("No article exists with the provided ID.");
+                        invalidIdAlert.showAndWait();
+                    }
+                } catch (NumberFormatException ex) {
+                    showErrorDialog("Invalid Input", "Non-numeric ID Entered", "Please enter a valid numeric ID.");
+                } catch (SQLException ex) {
+                    showErrorDialog("Error Deleting Article", "An error occurred while deleting the article.", ex.getMessage());
+                } catch (Exception ex) {
+                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                }
+            });
+        });
+
+        /** 2. Delete All Articles */
+        deleteAllButton.setOnAction(e -> {
+            try {
+				if (!databaseHelper.hasArticles()) {
+				    Alert noArticlesAlert = new Alert(Alert.AlertType.INFORMATION);
+				    noArticlesAlert.setTitle("No Articles");
+				    noArticlesAlert.setHeaderText("No Articles Available");
+				    noArticlesAlert.setContentText("There are currently no articles to delete.");
+				    noArticlesAlert.showAndWait();
+				    return;
+				}
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+
+            Alert confirmDelete = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmDelete.setTitle("Delete All Articles");
+            confirmDelete.setHeaderText("Are you sure you want to delete all articles?");
+            confirmDelete.setContentText("This action cannot be undone.");
+
+            Optional<ButtonType> result = confirmDelete.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
                 try {
                     databaseHelper.deleteAll();
-                    System.out.println("All articles are deleted.");
-                } catch (Exception e) {
-                    System.out.println("Error deleting articles: " + e.getMessage());
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Success");
+                    successAlert.setHeaderText("All Articles Deleted");
+                    successAlert.setContentText("All articles have been successfully deleted.");
+                    successAlert.showAndWait();
+                } catch (Exception ex) {
+                    showErrorDialog("Error Deleting Articles", "An error occurred while deleting all articles.", ex.getMessage());
                 }
             } else {
-                System.out.println("Deletion canceled."); 
+                Alert cancelAlert = new Alert(Alert.AlertType.INFORMATION);
+                cancelAlert.setTitle("Deletion Canceled");
+                cancelAlert.setHeaderText("No Articles Deleted");
+                cancelAlert.setContentText("The operation to delete all articles was canceled.");
+                cancelAlert.showAndWait();
             }
-            System.out.println(" ----------------------- ");
-            break;
-    	case "3":
-    		loggedOut = true;
-            System.out.println("Going Back...");
-            break;
-    	default:
-            System.out.println("Invalid choice. Please try again.");
-            break;
-	    }
-		}
-		articleManage();
-	    
-	    
-	}
-	
-	
-	/**
+        });
+
+        /** 3. Go Back */
+        backButton.setOnAction(e -> {
+            deleteStage.close();
+            /** Return to the article management interface */
+        });
+    }
+    
+    
+    /**
 	 * Back up article manager, you can back up the entire database or by group identifier, 
 	 * and it will ask for the backup file name to be used. 
 	 * 
 	 * @throws SQLException
 	 */
-	private static void articleBackUpManage() throws SQLException {
-		boolean loggedOut = false;
-		
-		while (!loggedOut) {
-		System.out.println(" ---------------------------- ");
-	    System.out.println("1. BackUp All Articles");
-	    System.out.println("2. BackUp Articles by Group");
-	    System.out.println("3. Go Back");
-	    System.out.print("Choose an option: ");
-	    String choice = scanner.nextLine();
-	    
-	    switch (choice) {
-    	case "1":
-    		System.out.print("Enter the filename for backup (e.g., backup.csv): ");
-            String backupFile = scanner.nextLine();
-            try {
-                databaseHelper.backupHelpSystemToFile(backupFile);
-                System.out.println("Backup of the entire help system completed successfully.");
-            } catch (Exception e) {
-                System.out.println("Error during backup: " + e.getMessage());
-            }
-            System.out.println(" ----------------------- ");
-            break;
-    	case "2":
-    		System.out.print("Enter the group identifier for backup: ");
-            String groupIdentifierBackup = scanner.nextLine();
-            System.out.print("Enter the filename for backup (e.g., groupBackup.csv): ");
-            String groupBackupFile = scanner.nextLine();
-            try {
-                databaseHelper.backUpGroupToFile(groupBackupFile, groupIdentifierBackup);
-                System.out.println("Backup of group '" + groupIdentifierBackup + "' completed successfully.");
-            } catch (Exception e) {
-                System.out.println("Error during backup: " + e.getMessage());
-            }
-            System.out.println(" ----------------------- ");
-            break;
-    	case "3":
-    		loggedOut = true;
-            System.out.println("Going Back...");
-            break;
-    	default:
-            System.out.println("Invalid choice. Please try again.");
-            break;
-	    }
-		}
-		articleManage();
-	}
-	
-	private static void articleRestoreManage() throws SQLException {
-		boolean loggedOut = false;
-		
-		while (!loggedOut) {
-		System.out.println(" ---------------------------- ");
-	    System.out.println("1. Restore with Deleting");
-	    System.out.println("2. Restore without Deleting");
-	    System.out.println("3. Go Back");
-	    System.out.print("Choose an option: ");
-	    String choice = scanner.nextLine();
-	    
-	    switch (choice) {
-    	case "1":
-    		System.out.print("Enter the filename to restore from: ");
-            String restoreFile = scanner.nextLine();
-            try {
-                databaseHelper.restoreSystem(restoreFile);
-                System.out.println("System restored successfully from " + restoreFile);
-            } catch (Exception e) {
-                System.out.println("Error during restoration: " + e.getMessage());
-            }
-            System.out.println(" ----------------------- ");
-            break;
-    	case "2":
-    		System.out.print("Enter the filename to restore existing from: ");
-            String restoreExistingFile = scanner.nextLine();
-            try {
-                databaseHelper.restoreSystemExisting(restoreExistingFile);
-                System.out.println("Existing system restored successfully from " + restoreExistingFile);
-            } catch (Exception e) {
-                System.out.println("Error during existing system restoration: " + e.getMessage());
-            }
-            System.out.println(" ----------------------- ");
-            break;
-    	case "3":
-    		loggedOut = true;
-            System.out.println("Going Back...");
-            break;
-    	default:
-            System.out.println("Invalid choice. Please try again.");
-            break;
-	    }
-		}
-		articleManage();
-	}
+    private void articleBackUpManage() throws SQLException{
+        Stage backupStage = new Stage();
+        backupStage.setTitle("Article Backup Manager");
 
-	
-	/**
-	 * This method allows students to either register or log in to the system.
-	 * If the user chooses to register, it collects necessary details (username, 
-	 * email, password, and personal information) and checks if the user already 
-	 * exists in the database. If the user exists, it informs the user; otherwise, 
-	 * it registers the new student.
-  	 *
-	 * If the user chooses to log in, it verifies the provided credentials against 
-	 * the database. Upon successful login, the student can log out at any time.
-	 *
-	 * @throws SQLException If an error occurs during database operations.
-	 */
-	private static void studentFlow() throws SQLException {
-		String email = null;
-		String passwordfirst = null;
-		String password = null;
-		boolean matched = false;
-		String fullName = null;
-		String prefName = null;
-		Date expire = null;
-		String skillLevel = "Intermediate";
-		System.out.println("student flow");
-		System.out.print("What would you like to do 1.Register 2.Login  ");
-		String choice = scanner.nextLine();
-		switch(choice) {
-		case "1": 
-			System.out.print("Enter Student Username: ");
-			String username = scanner.nextLine();
-			System.out.print("Enter Student Email: ");
-			email = scanner.nextLine();
-			while(!matched) {
-				System.out.print("Enter Student Password: ");
-				passwordfirst = scanner.nextLine(); 
-				System.out.print("Enter Student Password Again: ");
-				password = scanner.nextLine(); 
-				if(password.compareTo(passwordfirst) != 0) {
-					System.out.print("ERROR : Passwords must match.\n");
-				}else {
-					matched = true;
-				}
-			}
-			System.out.print("Enter Student First Name: ");
-			String first = scanner.nextLine();
-			System.out.print("Enter Student Middle Name: ");
-			String middle = scanner.nextLine();
-			System.out.print("Enter Student Last Name: ");
-			String last = scanner.nextLine();
-			System.out.print("Enter Student Preferred Name (Enter to Skip): ");
-			prefName = scanner.nextLine();
-			if(prefName.compareTo("") == 0) {
-				prefName = "N/A";
-			}
-			fullName = first + " " + middle + " " + last;
-			
-			// Check if user already exists in the database
-		    if (!databaseHelper.doesUserExist(username)) {
-		    	databaseHelper.register(username, password, "student", email , fullName, prefName, false, expire, skillLevel);
-		    	studentHome();
-		    } else {
-		        System.out.println("User already exists.");
-		        mainMenu();
-		    }
-			break;
-		case "2":
-			System.out.print("Enter Student Username: ");
-			username = scanner.nextLine();
-			System.out.print("Enter Student Password: ");
-			password = scanner.nextLine();
-			if (databaseHelper.login(username, password, "student")) {
-				System.out.println("User login successful.");
-			    studentHome();
-			} else {
-				System.out.println("Invalid user credentials. Try again!!");
-				mainMenu();
-			}
-			break;
-		}
-	}
-	/**
-	 * This method provides instructors with options to register or log in. If 
-	 * the user opts to register, it collects necessary information (username, 
-	 * email, password, and personal details) and checks for the existence of 
-	 * the user in the database. If the instructor does not exist, it registers 
-	 * them; otherwise, it notifies the user of their existing account. 
-	 * 
-	 * For login, it verifies the provided credentials and allows the instructor 
-	 * to log out anytime.
-	 * 
-	 * @throws SQLException If there is an error during the database operations.
-	 */
-	private static void instructorFlow() throws SQLException {
-		String email = null;
-		String passwordfirst = null;
-		String password = null;
-		boolean matched = false;
-		String fullName = null;
-		String prefName = null;
-		Date expire = null;
-		String skillLevel = "Intermediate";
-		System.out.println("instructor flow");
-		System.out.print("What would you like to do 1.Register 2.Login  ");
-		String choice = scanner.nextLine();
-		switch(choice) {
-		case "1": 
-			System.out.print("Enter Instructor Username: ");
-			String username = scanner.nextLine();
-			System.out.print("Enter Instructor Email: ");
-			email = scanner.nextLine();
-			while(!matched) {
-				System.out.print("Enter Instructor Password: ");
-				passwordfirst = scanner.nextLine(); 
-				System.out.print("Enter Instructor Password Again: ");
-				password = scanner.nextLine(); 
-				if(password.compareTo(passwordfirst) != 0) {
-					System.out.print("ERROR : Passwords must match.\n");
-				}else {
-					matched = true;
-				}
-			}
-			System.out.print("Enter Instructor First Name: ");
-			String first = scanner.nextLine();
-			System.out.print("Enter Instructor Middle Name: ");
-			String middle = scanner.nextLine();
-			System.out.print("Enter Instructor Last Name: ");
-			String last = scanner.nextLine();
-			System.out.print("Enter Instructor Preferred Name (Enter to Skip): ");
-			prefName = scanner.nextLine();
-			if(prefName.compareTo("") == 0) {
-				prefName = "N/A";
-			}
-			fullName = first + " " + middle + " " + last;
-			
-			// Check if user already exists in the database
-		    if (!databaseHelper.doesUserExist(username)) {
-		    	databaseHelper.register(username, password,"instructor", email, fullName, prefName, false, expire, skillLevel);
-		        System.out.println("Instructor setup completed.");
-		        instructorHome();
-		    } else {
-		        System.out.println("Instructor already exists.");
-		        mainMenu();
-		    }
-			break;
-		case "2":
-			System.out.print("Enter Instructor Username: ");
-			username = scanner.nextLine();
-			System.out.print("Enter Instructor Password: ");
-			password = scanner.nextLine();
-			if (databaseHelper.login(username, password, "instructor")) {
-				System.out.println("Instructor login successful.");
-				instructorHome();
+        /** Menu Buttons */
+        Button backupAllButton = new Button("Backup All Articles");
+        Button backupByGroupButton = new Button("Backup Articles by Group");
+        Button backButton = new Button("Go Back");
 
-			} else {
-				System.out.println("Invalid user credentials. Try again!!");
-				mainMenu();
-			}
-			break;
-		}
-	}
+        /** Layout */
+        VBox buttonLayout = new VBox(10, backupAllButton, backupByGroupButton, backButton);
+        buttonLayout.setPadding(new javafx.geometry.Insets(20));
+        buttonLayout.setAlignment(Pos.CENTER);
 
-	/**
-	 * Prompts the user to select a role for inviting a new user (either an instructor or a student). 
-	 * The method displays a message instructing the user to enter 'I' for Instructor or 'S' for Student. 
-	 * It continues to prompt the user until a valid choice is made. The input is case-sensitive.
-	 *
-	 * @return The role selected by the user, either "Student" or "Instructor".
-	 */
-	private static String pickRole() {
-		System.out.println( "To invite an instructor then type I\n"
-				+ "To invite a Student, then type S\nEnter your choice:  " );
-		String role = scanner.nextLine();
-		
-		while(true) {
-			switch (role) {
-			case "S":
-				return "Student";
-			case "I":
-				return "Instructor";
-			default:
-				System.out.println("Invalid choice. Please select 'I', 'S'");
-			}
-		}
-	}
-	/**
-	 * Handles the invitation flow for new users by verifying the provided invite code.
-	 * If the invite code exists in the database, it retrieves the role associated with that code 
-	 * and welcomes the user accordingly. Depending on the role, it directs the user to either 
-	 * the student or instructor flow, allowing them to proceed with registration or login. 
-	 * If the invite code is invalid, the method notifies the user and returns to the main menu.
-	 * 
-	 * @throws SQLException If an error occurs during database operations, such as checking 
-	 *                      the invite code or retrieving user roles.
-	 */
-	private static void inviteFlow() throws SQLException {
-		System.out.println("invite flow");
-		System.out.print("Enter Given Invite Code: ");
-		String code = scanner.nextLine();
-		if(databaseHelper.doesInviteExist(code)) {
-			String role = databaseHelper.getRole(code);
-			System.out.println("Welcome " + role + "!");
-			System.out.println(" ----------------------- ");
-			switch (role) {
-            case "Student":
-            	databaseHelper.removeInvite(code);
-                studentFlow();
-                break;
-            case "Instructor":
-            	databaseHelper.removeInvite(code);
-            	instructorFlow();
-                break;
-            default: 
-            	System.out.println("Invite Role Invalid");
-            	mainMenu();
-			}
-			
-		}else {
-			System.out.println("Invite Code Invalid.");
-			System.out.println(" ----------------------- ");
-			mainMenu();
-		}
-	}
-	
-	/**
-	 * Manages the admin login process. The method prompts the user for the admin username 
-	 * and password. It checks the entered credentials against the database. If the login is 
-	 * successful, the user is directed to the admin home page where they can manage users 
-	 * and other administrative tasks. If the credentials are invalid, the method notifies the user 
-	 * and allows them to try again.
-	 * 
-	 * @throws SQLException If an error occurs during the login process or any database operations.
-	 */
-	private static void adminFlow() throws SQLException {
-		System.out.println("admin flow");
-		System.out.print("Enter Admin Username: ");
-		String username = scanner.nextLine();
-		System.out.print("Enter Admin Password: ");
-		String password = scanner.nextLine();
-		if (databaseHelper.login(username, password, "admin")) {
-			System.out.println("Admin login successful.");
-			System.out.println();
-			adminHome();
+        /** Scene Setup */
+        Scene backupScene = new Scene(buttonLayout, 400, 300);
+        backupStage.setScene(backupScene);
+        backupStage.show();
 
-		} else {
-			System.out.println("Invalid admin credentials. Try again!!");
-		}
-	}
-	
-	/**
-	 * Manages the reset password process where the user 
-	 * has been given a one-time password, checks the date 
-	 * against the expiration date and allows for creation
-	 * of a new password for the user. 
-	 * 
-	 * @throws SQLException If an error occurs during the login process or any database operations.
-	 */
-	private static void resetFlow() throws SQLException {
-		System.out.println("reset flow");
-		String passwordFirst = null;
-		String password = null;
-    	boolean matched = false;
-		System.out.println("Enter your User ID:");
-		String username = scanner.nextLine();
-		System.out.println("Enter your one-time reset password:");
-		String tempPassword = scanner.nextLine();
-		
-		
-		
-		if(databaseHelper.isPasswordValid(username, tempPassword)) {
-			
-			if(databaseHelper.getDate(username).before(today)) {
-				System.out.println("One-Time Password has expired! Please contact admin.");
-				System.out.println(" -------------------------------------------------- ");
-				mainMenu();
-			}else {
-				String role = databaseHelper.getRole(username);
-				
-				switch (role) {
-	            case "Student":
-	            	databaseHelper.oneTimePasswordUsed(username);
-	            	while(!matched) {
-	    				System.out.print("Enter New Student Password: ");
-	    				passwordFirst = scanner.nextLine(); 
-	    				System.out.print("Enter New Student Password Again: ");
-	    				password = scanner.nextLine(); 
-	    				if(password.compareTo(passwordFirst) != 0) {
-	    					System.out.print("ERROR : Passwords must match.\n");
-	    				}else {
-	    					matched = true;
-	    				}
-	    			}
-	            	databaseHelper.updatePassword(username, password);
-	            	System.out.println("Password Reset!");
-	            	System.out.println(" -------------- ");
-	                studentHome();
-	                break;
-	            case "Instructor":
-	            	databaseHelper.oneTimePasswordUsed(username);
-	            	while(!matched) {
-	    				System.out.print("Enter New Instructor Password: ");
-	    				passwordFirst = scanner.nextLine(); 
-	    				System.out.print("Enter New Instructor Password Again: ");
-	    				password = scanner.nextLine(); 
-	    				if(password.compareTo(passwordFirst) != 0) {
-	    					System.out.print("ERROR : Passwords must match.\n");
-	    				}else {
-	    					matched = true;
-	    				}
-	    			}
-	            	databaseHelper.updatePassword(username, password);
-	            	System.out.println("Password Reset!");
-	            	System.out.println(" -------------- ");
-	                instructorHome();
-	                break;
-	            default: 
-	            	System.out.println("Password not set");
-	            	mainMenu();
-				}
-			}
-		}else {
-			System.out.println("One-time Password Invalid.");
-			System.out.println(" ----------------------- ");
-			mainMenu();
-		}
-	}
+        /** Button Actions */
 
-	/**
-	 * Displays the admin home page, offering various management options including 
-	 * viewing all users, inviting new users, resetting accounts, deleting accounts, 
-	 * and changing user roles. The method keeps running until the admin chooses to log out. 
-	 * It prompts the user for input and executes the selected option, providing feedback 
-	 * based on their choices. If an invalid option is chosen, the method prompts the admin 
-	 * to select again.
-	 * 
-	 * @throws SQLException If an error occurs during any of the database operations performed
-	 *                      within the selected options.
-	 */
-	private static void adminHome() throws SQLException {
-		boolean loggedOut = false;
-	    System.out.println("Welcome to the Admin Home Page, ");
-	    System.out.println(" ---------------------------- ");
-	    while (!loggedOut) {
-	        System.out.println("1. View All Users");
-	        System.out.println("2. Invite User");
-	        System.out.println("3. Reset an Account");
-	        System.out.println("4. Delete an Account");
-	        System.out.println("5. Change a User's Role");
-	        System.out.println("6. Manage Articles");
-	        System.out.println("7. Logout");
-	        System.out.print("Please choose an option: ");
+        /** 1. Backup All Articles */
+        backupAllButton.setOnAction(e -> {
+            TextInputDialog filenameDialog = new TextInputDialog("backup.csv");
+            filenameDialog.setTitle("Backup All Articles");
+            filenameDialog.setHeaderText("Enter the Filename for Backup");
+            filenameDialog.setContentText("Filename:");
 
-	        String choice = scanner.nextLine();
+            filenameDialog.showAndWait().ifPresent(filename -> {
+                try {
+                    databaseHelper.backupHelpSystemToFile(filename);
+                    showInfoDialog("Backup Successful", "Backup Completed", "The entire help system has been backed up to " + filename + ".");
+                } catch (Exception ex) {
+                    showErrorDialog("Backup Failed", "An error occurred during the backup.", ex.getMessage());
+                }
+            });
+        });
 
-	        switch (choice) {
-	            case "1":
-	                System.out.println("Displaying all users...");
-	                databaseHelper.displayUsersByAdmin();
-	                System.out.println(" ----------------------- ");
-	                break;
-	            case "2":
-	                String inviteRole = pickRole();
-	                System.out.print("Input the Code for Invited User: ");
-	                String inviteCode = scanner.nextLine();
-	                databaseHelper.inviteUser(inviteCode, inviteRole);
-	                System.out.println("User Invited with Code: " + inviteCode);
-	                System.out.println(" ----------------------- ");
-	                break;
-	            case "3":
-	            	System.out.print("Input username to be reset: ");
-	                String resetName = scanner.nextLine();
-	                if(databaseHelper.doesUserExist(resetName)) {
-	                	System.out.print("Enter One-Time Password: ");
-	                	String onetimepass = scanner.nextLine();
-	                	System.out.print("Enter expiration date (YYYY-MM-DD): ");
-	                	String expiration = scanner.nextLine();
-	                	try {
-	                		LocalDate expireLocal = LocalDate.parse(expiration);
-	                		Date expireDate = Date.valueOf(expireLocal);
-	                		databaseHelper.resetUserPassword(resetName, onetimepass, expireDate);
-	                		System.out.println("One time password set!");
-	                		System.out.println(" -------------------- ");
-	                    }catch(DateTimeParseException e) {
-	                        System.out.println(e);
-	                        System.out.println("Invalid date format! Please follow format: YYYY-MM-DD");
-	                        System.out.println(" --------------------------------------------------- ");
-	                    } 
-	                	
-	                }else {
-	                	System.out.println("User does not exist!");
-	                	System.out.println(" ------------------ ");
-	                }
-	                break;
-	            case "4":
-	            	System.out.print("Enter Username for Account Deletion: ");
-	                String deleteUser = scanner.nextLine();
-	                if(databaseHelper.doesUserExist(deleteUser)) {
-	                	databaseHelper.removeUser(deleteUser);
-	                	System.out.println("User Removed.");
-	                	System.out.println(" ------------------ ");
-	                }else {
-	                	System.out.println("User does not exist!");
-	                	System.out.println(" ------------------ ");
-	                }
-	                break;
-	            case "5":
-	            	System.out.print("Enter user to be changed: ");
-	                String userToChange = scanner.nextLine();
-	                System.out.print("Enter S to change to Student, Enter I to change to Instructor: ");
-	                String newRole = scanner.nextLine();
-	                if(databaseHelper.doesUserExist(userToChange)) {
-		                switch(newRole) {
-		                	case "S":
-		                		databaseHelper.changeRole(userToChange, "student");
-		                		System.out.println(userToChange + "'s role was changed to student.");
-		                		System.out.println(" -------------------------------------------- ");
-		                	break;
-		                	
-		                	case "I": 
-		                		databaseHelper.changeRole(userToChange, "instructor");
-		                		System.out.println(userToChange + "'s role was changed to instructor.");
-		                		System.out.println(" -------------------------------------------- ");
-		                	break;
-		                	
-		                	default: 
-		                		System.out.println("Invalid Input.");
-		                		System.out.println(" ------------ ");
-		                	break;
-	                	}
-	                }else {
-	                	System.out.println("User does not exist.");
-                		System.out.println(" ------------------ ");
+        /** 2. Backup Articles by Group */
+        backupByGroupButton.setOnAction(e -> {
+            Dialog<Pair<String, String>> groupBackupDialog = new Dialog<>();
+            groupBackupDialog.setTitle("Backup Articles by Group");
+            groupBackupDialog.setHeaderText("Enter the Group Identifier and Filename for Backup");
 
-	                }
-	                break;
-	            case "6":
-	            	articleManage();
-	            case "7":
-	                loggedOut = true;
-	                System.out.println("Logging out...");
-	                break;
-	        }
-	    }
-	    mainMenu();
-	} 
-	
-	/**
-	 * Displays the student home page, currenly offering to view courses, 
-	 * grades, or to logout. Logout is currently the only functional 
-	 * course of action. 
-	 * 
-	 * @throws SQLException If an error occurs during any of the database operations performed
-	 *                      within the selected options.
-	 */
-	private static void studentHome() {
-	    boolean loggedOut = false;
-	    System.out.println("Welcome to the Student Home Page, ");
+            /** Input Fields */
+            TextField groupField = new TextField();
+            groupField.setPromptText("Group Identifier");
+            TextField filenameField = new TextField("groupBackup.csv");
+            filenameField.setPromptText("Filename");
 
-	    while (!loggedOut) {
-	        System.out.println("Please choose an option:");
-	        System.out.println("1. View Courses");
-	        System.out.println("2. View Grades");
-	        System.out.println("3. Search Article by Keyword");
-	        System.out.println("4. Logout");
+            VBox inputLayout = new VBox(10, new Label("Group Identifier:"), groupField, new Label("Filename:"), filenameField);
+            inputLayout.setPadding(new javafx.geometry.Insets(10));
 
-	        String choice = scanner.nextLine();
+            groupBackupDialog.getDialogPane().setContent(inputLayout);
+            groupBackupDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-	        switch (choice) {
-	            case "1":
-	                System.out.println("Displaying courses...");
-	                break;
-	            case "2":
-	                System.out.println("Displaying grades...");
-	                break;
-	            case "3":
-	                System.out.print("Enter keyword to search: ");
-	                String keyword = scanner.nextLine();
-	                try {
-	                    databaseHelper.studentSearchKeyword(keyword);
-	                } catch (Exception e) {
-	                    System.out.println("An error occurred while searching for articles: " + e.getMessage());
-	                }
-	                System.out.println(" ----------------------- ");
-	                break;
-	            case "4":
-	                loggedOut = true;
-	                System.out.println("Logging out...");
-	                break;
-	            default:
-	                System.out.println("Invalid choice. Please try again.");
-	                break;
-	        }
-	    }
-	  mainMenu();
-	}
+            groupBackupDialog.setResultConverter(dialogButton -> {
+                if (dialogButton == ButtonType.OK) {
+                    return new Pair<>(groupField.getText(), filenameField.getText());
+                }
+                return null;
+            });
 
-	
-	/**
-	 * Displays the instructor home page, currenly offering to view students, 
-	 * manage courses, or to logout. Logout is currently the only functional 
-	 * course of action. 
-	 * 
-	 * @throws SQLException If an error occurs during any of the database operations performed
-	 *                      within the selected options.
-	 */
-	private static void instructorHome() throws SQLException{
-	    boolean loggedOut = false;
-	    System.out.println("Welcome to the Instructor Home Page, ");
+            groupBackupDialog.showAndWait().ifPresent(result -> {
+                String groupIdentifier = result.getKey();
+                String filename = result.getValue();
 
-	    while (!loggedOut) {
-	        System.out.println("Please choose an option:");
-	        System.out.println("1. View Students");
-	        System.out.println("2. Manage Courses");
-	        System.out.println("3. Manage Articles");
-	        System.out.println("4. Logout");
+                try {
+                    databaseHelper.backUpGroupToFile(filename, groupIdentifier);
+                    showInfoDialog("Backup Successful", "Backup Completed", "Backup of group '" + groupIdentifier + "' has been saved to " + filename + ".");
+                } catch (Exception ex) {
+                    showErrorDialog("Backup Failed", "An error occurred during the backup.", ex.getMessage());
+                }
+            });
+        });
 
-	        String choice = scanner.nextLine();
+        /** 3. Go Back */
+        backButton.setOnAction(e -> {
+            backupStage.close();
+            /** Return to the article management interface */
+        });
+    }
+    
+    
+    /**
+     * Article Restore Manager, you can restore any previously backed up
+     * file of articles into the current system, with the choice to either 
+     * delete all articles currently in the system or to add onto the current
+     * slate of articles. 
+     * 
+     * @throws SQLException
+     */
+    private void articleRestoreManage() throws SQLException{
+        Stage restoreStage = new Stage();
+        restoreStage.setTitle("Article Restore Manager");
 
-	        switch (choice) {
-	            case "1":
-	                System.out.println("Displaying students...");
-	                break;
-	            case "2":
-	                System.out.println("Managing courses...");
-	                break;
-	            case "3":
-	            	articleManage();
-	            case "4":
-	                loggedOut = true; 
-	                System.out.println("Logging out...");
-	                break;
-	            default:
-	                System.out.println("Invalid choice. Please try again.");
-	                break;
-	        }
-	    }
-	   mainMenu();
-	}
+        /** Menu Buttons */
+        Button restoreWithDeleteButton = new Button("Restore with Deleting");
+        Button restoreWithoutDeleteButton = new Button("Restore without Deleting");
+        Button backButton = new Button("Go Back");
 
+        /** Layout */
+        VBox buttonLayout = new VBox(10, restoreWithDeleteButton, restoreWithoutDeleteButton, backButton);
+        buttonLayout.setPadding(new javafx.geometry.Insets(20));
+        buttonLayout.setAlignment(Pos.CENTER);
 
+        /** Scene Setup */
+        Scene restoreScene = new Scene(buttonLayout, 400, 300);
+        restoreStage.setScene(restoreScene);
+        restoreStage.show();
 
+        /** Button Actions */
+
+        /** 1. Restore with Deleting */
+        restoreWithDeleteButton.setOnAction(e -> {
+            TextInputDialog restoreFileDialog = new TextInputDialog("backup.csv");
+            restoreFileDialog.setTitle("Restore with Deleting");
+            restoreFileDialog.setHeaderText("Enter the Filename to Restore From");
+            restoreFileDialog.setContentText("Filename:");
+
+            restoreFileDialog.showAndWait().ifPresent(restoreFile -> {
+                try {
+                    databaseHelper.restoreSystem(restoreFile);
+                    showInfoDialog("Restoration Successful", "System Restored", "The system was successfully restored from " + restoreFile + ".");
+                } catch (Exception ex) {
+                    showErrorDialog("Restoration Failed", "An error occurred during restoration.", ex.getMessage());
+                }
+            });
+        });
+
+        /** 2. Restore without Deleting */
+        restoreWithoutDeleteButton.setOnAction(e -> {
+            TextInputDialog restoreExistingFileDialog = new TextInputDialog("backup.csv");
+            restoreExistingFileDialog.setTitle("Restore without Deleting");
+            restoreExistingFileDialog.setHeaderText("Enter the Filename to Restore From");
+            restoreExistingFileDialog.setContentText("Filename:");
+
+            restoreExistingFileDialog.showAndWait().ifPresent(restoreFile -> {
+                try {
+                    databaseHelper.restoreSystemExisting(restoreFile);
+                    showInfoDialog("Restoration Successful", "Existing System Restored", "The existing system was successfully restored from " + restoreFile + ".");
+                } catch (Exception ex) {
+                    showErrorDialog("Restoration Failed", "An error occurred during restoration.", ex.getMessage());
+                }
+            });
+        });
+
+        /** 3. Go Back */
+        backButton.setOnAction(e -> {
+            restoreStage.close();
+            /** Return to the article management interface */
+        });
+    }
+    
+    
+    
+
+    /**
+     *  Utility Methods for Dialogs
+     * 
+     * @param title
+     * @param header
+     * @param content
+     */
+    private void showInfoDialog(String title, String header, String content) {
+        Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
+        infoAlert.setTitle(title);
+        infoAlert.setHeaderText(header);
+        infoAlert.setContentText(content);
+        infoAlert.showAndWait();
+    }
+
+    /**
+     * Utility to Show Error Dialogs
+     * 
+     * @param title
+     * @param header
+     * @param content
+     */
+    private void showErrorDialog(String title, String header, String content) {
+        Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+        errorAlert.setTitle(title);
+        errorAlert.setHeaderText(header);
+        errorAlert.setContentText(content);
+        errorAlert.showAndWait();
+    }
+
+    
+    
+	/** ------------ Alert Function for Errors or Certain Displays  ------------ */
+
+    /**
+     * Displays an alert with a specified title and message.
+     *
+     * @param title   the title of the alert
+     * @param message the message of the alert
+     */
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
+    
+	/** ------------ Main  ------------ */
+
+    /**
+     * The main method to launch the application.
+     *
+     * @param args the command-line arguments
+     */
+    public static void main(String[] args) {
+        launch(args);
+    }
 }
