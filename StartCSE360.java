@@ -314,7 +314,7 @@ public class StartCSE360 extends Application {
                 try {
 					if (databaseHelper.register(username, password, "student", email, 
 							fullName, prefName, false, expire, skillLevel)) {
-					    instructorHome();
+					    studentHome();
 					    studentStage.close();
 					} else {
 					    showAlert("Error", "Invalid credentials!");
@@ -683,16 +683,26 @@ public class StartCSE360 extends Application {
         /** Add student functionalities here */
         Button viewGradesButton = new Button("View Grades");
         Button enrollButton = new Button("Enroll in Course");
+        Button getHelpButton = new Button("Get Help");
         Button logoutButton = new Button("Logout");
-
+        
+        
         viewGradesButton.setOnAction(e -> showAlert("Info", "Displaying grades..."));
         enrollButton.setOnAction(e -> showAlert("Info", "Enrolling in course..."));
+        getHelpButton.setOnAction(e -> {
+        	try {
+				helpManager();
+			} catch (SQLException e1) {
+				
+				e1.printStackTrace();
+			}
+        });
         logoutButton.setOnAction(e -> {
             studentHomeStage.close();
             /** Redirect to main menu or login page if needed */
         });
 
-        studentLayout.getChildren().addAll(viewGradesButton, enrollButton, logoutButton);
+        studentLayout.getChildren().addAll(viewGradesButton, enrollButton, getHelpButton, logoutButton);
 
         Scene studentHomeScene = new Scene(studentLayout, 300, 300);
         studentHomeStage.setScene(studentHomeScene);
@@ -1366,6 +1376,220 @@ public class StartCSE360 extends Application {
     }
     
     
+    /** ------------ Help Managers  ------------ */
+    
+    
+    /**
+     * The Help Manager is a menu to help students navigate 
+     * and view help articles or create help requests.
+     * 
+     * @throws SQLException
+     */
+    private void helpManager() throws SQLException{
+    	Stage helpStage = new Stage();
+        helpStage.setTitle("Help System");
+
+        /** Layout for Help Management */
+        VBox articleLayout = new VBox(10);
+        articleLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Buttons for help management functionalities */
+        Button genericMessageButton = new Button("Send a Generic Message");
+        Button specificMessageButton = new Button("Send a Specific Message");
+        Button searchButton = new Button("Search for Articles");
+        
+        Button goBackButton = new Button("Go Back");
+        
+
+        /** Set button actions */
+        genericMessageButton.setOnAction(e -> {
+			try {
+				genericMessage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+		});
+        
+        specificMessageButton.setOnAction(e -> {
+			try {
+				specificMessage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+		});
+        
+        searchButton.setOnAction(e -> {
+			try {
+				articleDisplayManage();
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+		});
+
+        goBackButton.setOnAction(e -> {
+            helpStage.close();
+            
+        });
+
+        /** Add buttons to the article layout */
+        articleLayout.getChildren().addAll(
+        		genericMessageButton, specificMessageButton, goBackButton
+        );
+
+        /** Create the scene */
+        Scene articleScene = new Scene(articleLayout, 300, 300);
+        helpStage.setScene(articleScene);
+        helpStage.show();
+    }
+    
+    /**
+     * The generic message function helps the user
+     * view help articles through a message system and 
+     * can specify the level and group of the article to be
+     * requested.
+     * 
+     * @throws SQLException
+     */
+    private void genericMessage() throws SQLException {
+    	Stage genericMessageStage = new Stage();
+    	genericMessageStage.setTitle("Send Generic Message");
+    	
+        /** Dropdown for Article Level */
+        ChoiceBox<String> levelChoiceBox = new ChoiceBox<>();
+        levelChoiceBox.getItems().addAll("All", "Beginner", "Intermediate", "Advanced", "Expert");
+        levelChoiceBox.setValue("All");
+        
+        /** Dropdown for Generic Message --- ADD NEW MESSAGES HERE*/
+        ChoiceBox<String> messageChoiceBox = new ChoiceBox<>();
+        messageChoiceBox.getItems().addAll("Empty");
+        messageChoiceBox.setValue("Empty");
+        
+        /**Group Identifier*/
+        TextField groupField = new TextField();
+        groupField.setPromptText("Leave empty to search all groups");
+
+        /** Send and Cancel Buttons*/
+        Button sendButton = new Button("Send");
+        Button cancelButton = new Button("Cancel");
+
+        /** Form Layout */
+        GridPane formLayout = new GridPane();
+        formLayout.setPadding(new javafx.geometry.Insets(20));
+        formLayout.setHgap(10);
+        formLayout.setVgap(10);
+
+        formLayout.add(new Label("Generic Message:"), 0, 0);
+        formLayout.add(messageChoiceBox, 1, 0);
+        formLayout.add(new Label("Level:"), 0, 1);
+        formLayout.add(levelChoiceBox, 1, 1);
+        formLayout.add(new Label("Group:"), 0, 2);
+        formLayout.add(groupField, 1, 2);
+        
+        
+        HBox buttonLayout = new HBox(10, sendButton, cancelButton);
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        VBox mainLayout = new VBox(10, formLayout, buttonLayout);
+        mainLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Submit Button Action */
+        sendButton.setOnAction(e -> {
+            
+            String level = levelChoiceBox.getValue().toLowerCase();
+            String message = messageChoiceBox.getValue().toLowerCase();
+
+            try {
+            	/** Find help article and display it using Database*/
+            	
+            	
+                
+                helpManager(); 
+            } catch (SQLException ex) {
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Database Error");
+                errorAlert.setHeaderText("Failed to Find Help Article");
+                errorAlert.setContentText("Error: " + ex.getMessage());
+                errorAlert.showAndWait();
+            }
+        });
+
+        /** Cancel Button Action */
+        cancelButton.setOnAction(e -> genericMessageStage.close());
+
+        /** Set the Scene and Show */
+        Scene genericMessageScene = new Scene(mainLayout, 300, 300);
+        genericMessageStage.setScene(genericMessageScene);
+        genericMessageStage.show();
+    }
+    
+    
+    /**
+     * The specific message function helps users
+     * create a help request to the system when the 
+     * help message they need is not included in generic
+     * messages. 
+     * 
+     * @throws SQLException
+     */
+    private void specificMessage() throws SQLException {
+    	Stage specificMessageStage = new Stage();
+    	specificMessageStage.setTitle("Send Generic Message");
+    	
+        /** Dropdown for Specific Message --- ADD NEW MESSAGES HERE*/
+        TextField messageField = new TextField();
+        messageField.setPromptText("Enter Message");
+
+        /** Send and Cancel Buttons*/
+        Button sendButton = new Button("Send");
+        Button cancelButton = new Button("Cancel");
+
+        /** Form Layout */
+        GridPane formLayout = new GridPane();
+        formLayout.setPadding(new javafx.geometry.Insets(20));
+        formLayout.setHgap(10);
+        formLayout.setVgap(10);
+
+        formLayout.add(new Label("Specific Message:"), 0, 0);
+        formLayout.add(messageField, 1, 0);
+        
+        HBox buttonLayout = new HBox(10, sendButton, cancelButton);
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        VBox mainLayout = new VBox(10, formLayout, buttonLayout);
+        mainLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Submit Button Action */
+        sendButton.setOnAction(e -> {
+            
+            String message = messageField.getText().trim();
+
+            try {
+            	/** Create Request in Database*/
+            	
+            	
+                
+                helpManager(); 
+            } catch (SQLException ex) {
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Database Error");
+                errorAlert.setHeaderText("Failed to Generate Request");
+                errorAlert.setContentText("Error: " + ex.getMessage());
+                errorAlert.showAndWait();
+            }
+        });
+
+        /** Cancel Button Action */
+        cancelButton.setOnAction(e -> specificMessageStage.close());
+
+        /** Set the Scene and Show */
+        Scene specificMessageScene = new Scene(mainLayout, 300, 300);
+        specificMessageStage.setScene(specificMessageScene);
+        specificMessageStage.show();
+    }
+    
     
 
     /**
@@ -1376,11 +1600,11 @@ public class StartCSE360 extends Application {
      * @param content
      */
     private void showInfoDialog(String title, String header, String content) {
-        Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
-        infoAlert.setTitle(title);
-        infoAlert.setHeaderText(header);
-        infoAlert.setContentText(content);
-        infoAlert.showAndWait();
+    	Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
+    	infoAlert.setTitle(title);
+    	infoAlert.setHeaderText(header);
+    	infoAlert.setContentText(content);
+    	infoAlert.showAndWait();
     }
 
     /**
@@ -1391,11 +1615,11 @@ public class StartCSE360 extends Application {
      * @param content
      */
     private void showErrorDialog(String title, String header, String content) {
-        Alert errorAlert = new Alert(Alert.AlertType.ERROR);
-        errorAlert.setTitle(title);
-        errorAlert.setHeaderText(header);
-        errorAlert.setContentText(content);
-        errorAlert.showAndWait();
+    	Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+    	errorAlert.setTitle(title);
+    	errorAlert.setHeaderText(header);
+    	errorAlert.setContentText(content);
+    	errorAlert.showAndWait();
     }
 
     
@@ -1409,11 +1633,11 @@ public class StartCSE360 extends Application {
      * @param message the message of the alert
      */
     private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    	Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    	alert.setTitle(title);
+    	alert.setHeaderText(null);
+    	alert.setContentText(message);
+    	alert.showAndWait();
     }
     
     
@@ -1425,6 +1649,6 @@ public class StartCSE360 extends Application {
      * @param args the command-line arguments
      */
     public static void main(String[] args) {
-        launch(args);
+    	launch(args);
     }
 }
