@@ -94,6 +94,9 @@ public class StartCSE360 extends Application {
         Scene scene = new Scene(layout, 300, 250);
         primaryStage.setScene(scene);
         primaryStage.show();
+        if(databaseHelper.isDatabaseEmpty()) {
+        	adminRegister();
+        }
     }
     
 	/** ------------ Admin Methods  ------------ */
@@ -859,6 +862,9 @@ public class StartCSE360 extends Application {
         /** Form Fields */
         TextField titleField = new TextField();
         titleField.setPromptText("Enter Article Title");
+        
+        TextField authorField = new TextField();
+        authorField.setPromptText("Enter Author Title");
 
         TextArea descriptionArea = new TextArea();
         descriptionArea.setPromptText("Enter Article Description");
@@ -902,22 +908,24 @@ public class StartCSE360 extends Application {
 
         formLayout.add(new Label("Title:"), 0, 0);
         formLayout.add(titleField, 1, 0);
-        formLayout.add(new Label("Description:"), 0, 1);
-        formLayout.add(descriptionArea, 1, 1);
-        formLayout.add(new Label("Body:"), 0, 2);
-        formLayout.add(bodyArea, 1, 2);
-        formLayout.add(new Label("Level:"), 0, 3);
-        formLayout.add(levelChoiceBox, 1, 3);
-        formLayout.add(new Label("Group Identifier:"), 0, 4);
-        formLayout.add(groupField, 1, 4);
-        formLayout.add(new Label("Keywords:"), 0, 5);
-        formLayout.add(keywordsField, 1, 5);
-        formLayout.add(new Label("Access Level:"), 0, 6);
-        formLayout.add(accessLevelChoiceBox, 1, 6);
-        formLayout.add(new Label("Other Details:"), 0, 7);
-        formLayout.add(otherDetailsArea, 1, 7);
-        formLayout.add(new Label("Links:"), 0, 8);
-        formLayout.add(linksField, 1, 8);
+        formLayout.add(new Label("Author:"), 0, 1);
+        formLayout.add(authorField, 1, 1);
+        formLayout.add(new Label("Description:"), 0, 2);
+        formLayout.add(descriptionArea, 1, 2);
+        formLayout.add(new Label("Body:"), 0, 3);
+        formLayout.add(bodyArea, 1, 3);
+        formLayout.add(new Label("Level:"), 0, 4);
+        formLayout.add(levelChoiceBox, 1, 4);
+        formLayout.add(new Label("Group Identifier:"), 0, 5);
+        formLayout.add(groupField, 1, 5);
+        formLayout.add(new Label("Keywords:"), 0, 6);
+        formLayout.add(keywordsField, 1, 6);
+        formLayout.add(new Label("Access Level:"), 0, 7);
+        formLayout.add(accessLevelChoiceBox, 1, 7);
+        formLayout.add(new Label("Other Details:"), 0, 8);
+        formLayout.add(otherDetailsArea, 1, 8);
+        formLayout.add(new Label("Links:"), 0, 9);
+        formLayout.add(linksField, 1, 9);
 
         HBox buttonLayout = new HBox(10, submitButton, cancelButton);
         buttonLayout.setAlignment(Pos.CENTER);
@@ -1526,7 +1534,7 @@ public class StartCSE360 extends Application {
             } catch (SQLException ex) {
                 Alert errorAlert = new Alert(Alert.AlertType.ERROR);
                 errorAlert.setTitle("Database Error");
-                errorAlert.setHeaderText("Failed to Find Help Article");
+                errorAlert.setHeaderText("Failed to Find Help Articles");
                 errorAlert.setContentText("Error: " + ex.getMessage());
                 errorAlert.showAndWait();
             }
@@ -1536,7 +1544,7 @@ public class StartCSE360 extends Application {
         cancelButton.setOnAction(e -> genericMessageStage.close());
 
         /** Set the Scene and Show */
-        Scene genericMessageScene = new Scene(mainLayout, 300, 300);
+        Scene genericMessageScene = new Scene(mainLayout, 400, 200);
         genericMessageStage.setScene(genericMessageScene);
         genericMessageStage.show();
     }
@@ -1601,11 +1609,18 @@ public class StartCSE360 extends Application {
         cancelButton.setOnAction(e -> specificMessageStage.close());
 
         /** Set the Scene and Show */
-        Scene specificMessageScene = new Scene(mainLayout, 300, 300);
+        Scene specificMessageScene = new Scene(mainLayout, 400, 200);
         specificMessageStage.setScene(specificMessageScene);
         specificMessageStage.show();
     }
     
+    
+    /**
+     * Article Search Manager to help a student or any other user
+     * search for articles using IDs, Groups, and author names or words. 
+     * 
+     * @throws SQLException
+     */
     private void articleSearch() throws SQLException{
         Stage displayStage = new Stage();
         displayStage.setTitle("Article Search Manager");
@@ -1613,13 +1628,13 @@ public class StartCSE360 extends Application {
         /** Menu Buttons */
         Button viewByIdButton = new Button("Search Article by ID");
         Button displayByGroupButton = new Button("Search Articles by Group");
-        Button searchByNameButton = new Button("Search by Names");
-        Button searchByWordsButton = new Button("Search by Word or Phrases");
+        Button searchByAuthorButton = new Button("Search by Author");
+        Button searchByWordsButton = new Button("Search by Word or Phrase");
         Button backButton = new Button("Go Back");
 
         /** Layout */
         VBox buttonLayout = new VBox(10, viewByIdButton, displayByGroupButton, 
-        		searchByNameButton, searchByWordsButton, backButton);
+        		searchByAuthorButton, searchByWordsButton, backButton);
         buttonLayout.setPadding(new javafx.geometry.Insets(20));
         buttonLayout.setAlignment(Pos.CENTER);
 
@@ -1689,7 +1704,7 @@ public class StartCSE360 extends Application {
             });
         });
 
-        /** 2. Display Articles by Group */
+        /** Display Articles by Group */
         displayByGroupButton.setOnAction(e -> {
             TextInputDialog groupDialog = new TextInputDialog();
             groupDialog.setTitle("Display Articles by Group");
@@ -1711,48 +1726,14 @@ public class StartCSE360 extends Application {
             });
         });
         
-        /** 2. Display Articles by Name */
-        searchByNameButton.setOnAction(e -> {
-            TextInputDialog nameDialog = new TextInputDialog();
-            nameDialog.setTitle("Display Articles by Name");
-            nameDialog.setHeaderText("Enter the Name");
-            nameDialog.setContentText("Name:");
-
-            nameDialog.showAndWait().ifPresent(name -> {
-                try {
-                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
-                	articlesFound.setTitle("Articles");
-                	articlesFound.setHeaderText("Articles by Name");
-				    //articlesFound.setContentText(databaseHelper.displayArticleByName(name)); --- CHANGE FOR DATABASE
-                	articlesFound.showAndWait();
-               // } catch (SQLException ex) {
-               //     showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by name.", ex.getMessage());
-                } catch (Exception ex) {
-                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
-                }
-            });
+        /** Display Articles by Name */
+        searchByAuthorButton.setOnAction(e -> {
+        	searchArticleByAuthorManager();
         });
         
-        /** 2. Display Articles by Words */
-        searchByNameButton.setOnAction(e -> {
-            TextInputDialog wordsDialog = new TextInputDialog();
-            wordsDialog.setTitle("Display Articles by Name");
-            wordsDialog.setHeaderText("Enter the Name");
-            wordsDialog.setContentText("Name:");
-
-            wordsDialog.showAndWait().ifPresent(name -> {
-                try {
-                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
-                	articlesFound.setTitle("Articles");
-                	articlesFound.setHeaderText("Articles by Words");
-				    //articlesFound.setContentText(databaseHelper.displayArticleByWords(name)); --- CHANGE FOR DATABASE
-                	articlesFound.showAndWait();
-               // } catch (SQLException ex) {
-               //     showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by name.", ex.getMessage());
-                } catch (Exception ex) {
-                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
-                }
-            });
+        /** Display Articles by Words */
+        searchByWordsButton.setOnAction(e -> {
+        	searchArticleByWordsManager();
         });
 
         /** 4. Go Back */
@@ -1760,6 +1741,134 @@ public class StartCSE360 extends Application {
             displayStage.close();
             /** Return to article management interface */
         });
+    }
+    
+    private void searchArticleByAuthorManager() {
+    	Stage searchByAuthorStage = new Stage();
+    	searchByAuthorStage.setTitle("Search by Author");
+    	
+    	/**Name Field*/
+        TextField authorField = new TextField();
+        authorField.setPromptText("Enter author to search");
+        
+        /**Group Identifier*/
+        TextField groupField = new TextField();
+        groupField.setPromptText("Leave empty to search all groups");
+
+        /** Send and Cancel Buttons*/
+        Button sendButton = new Button("Send");
+        Button cancelButton = new Button("Cancel");
+
+        /** Form Layout */
+        GridPane formLayout = new GridPane();
+        formLayout.setPadding(new javafx.geometry.Insets(20));
+        formLayout.setHgap(10);
+        formLayout.setVgap(10);
+
+        formLayout.add(new Label("Name:"), 0, 0);
+        formLayout.add(authorField, 1, 0);
+        formLayout.add(new Label("Group:"), 0, 1);
+        formLayout.add(groupField, 1, 1);
+        
+        
+        HBox buttonLayout = new HBox(10, sendButton, cancelButton);
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        VBox mainLayout = new VBox(10, formLayout, buttonLayout);
+        mainLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Submit Button Action */
+        sendButton.setOnAction(e -> {
+            
+            String author = authorField.getText().trim();
+            String group =  groupField.getText().trim();
+
+            try {
+            	/** Find help article and display it using Database*/
+            	
+            	
+                
+                articleSearch(); 
+            } catch (SQLException ex) {
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Database Error");
+                errorAlert.setHeaderText("Failed to Find Help Articles");
+                errorAlert.setContentText("Error: " + ex.getMessage());
+                errorAlert.showAndWait();
+            }
+        });
+
+        /** Cancel Button Action */
+        cancelButton.setOnAction(e -> searchByAuthorStage.close());
+
+        /** Set the Scene and Show */
+        Scene searchByAuthorScene = new Scene(mainLayout, 300, 300);
+        searchByAuthorStage.setScene(searchByAuthorScene);
+        searchByAuthorStage.show();
+    }
+    
+    private void searchArticleByWordsManager() {
+    	Stage searchByWordsStage = new Stage();
+    	searchByWordsStage.setTitle("Search by Word or Phrase");
+    	
+    	/**Name Field*/
+        TextField wordField = new TextField();
+        wordField.setPromptText("Enter word or phrase to search");
+        
+        /**Group Identifier*/
+        TextField groupField = new TextField();
+        groupField.setPromptText("Leave empty to search all groups");
+
+        /** Send and Cancel Buttons*/
+        Button sendButton = new Button("Send");
+        Button cancelButton = new Button("Cancel");
+
+        /** Form Layout */
+        GridPane formLayout = new GridPane();
+        formLayout.setPadding(new javafx.geometry.Insets(20));
+        formLayout.setHgap(10);
+        formLayout.setVgap(10);
+
+        formLayout.add(new Label("Name:"), 0, 0);
+        formLayout.add(wordField, 1, 0);
+        formLayout.add(new Label("Group:"), 0, 1);
+        formLayout.add(groupField, 1, 1);
+        
+        
+        HBox buttonLayout = new HBox(10, sendButton, cancelButton);
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        VBox mainLayout = new VBox(10, formLayout, buttonLayout);
+        mainLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Submit Button Action */
+        sendButton.setOnAction(e -> {
+            
+            String words = wordField.getText().trim();
+            String group =  groupField.getText().trim();
+
+            try {
+            	/** Find help article and display it using Database*/
+            	
+            	
+                
+                articleSearch(); 
+            } catch (SQLException ex) {
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Database Error");
+                errorAlert.setHeaderText("Failed to Find Help Articles");
+                errorAlert.setContentText("Error: " + ex.getMessage());
+                errorAlert.showAndWait();
+            }
+        });
+
+        /** Cancel Button Action */
+        cancelButton.setOnAction(e -> searchByWordsStage.close());
+
+        /** Set the Scene and Show */
+        Scene searchByWordsScene = new Scene(mainLayout, 300, 300);
+        searchByWordsStage.setScene(searchByWordsScene);
+        searchByWordsStage.show();
     }
     
     
