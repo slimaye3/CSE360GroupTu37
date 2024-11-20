@@ -289,16 +289,18 @@ class DatabaseHelper {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean displayArticle(int id) throws Exception {
+	public String displayArticle(int id) throws Exception {
 	    
 	    String query = "SELECT * FROM Articles WHERE id = ?";
+	    
+	    String display = "";
 
 	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 	        pstmt.setInt(1, id);
 
 	        try (ResultSet rs = pstmt.executeQuery()) {
 	            if (!rs.next()) {
-	                return false;
+	                return display;
 	            }
 
 	            int newid = rs.getInt("id");
@@ -312,17 +314,17 @@ class DatabaseHelper {
 	            String other = rs.getString("other");
 	            String links = rs.getString("links_misc");
 
-	            System.out.println("ID: " + newid);
-	            System.out.println("Title: " + title);
-	            System.out.println("Description: " + description);
-	            System.out.println("Body: " + body);
-	            System.out.println("Level: " + level);
-	            System.out.println("Group Identifier: " + groupIdentifier);
-	            System.out.println("Keywords: " + keywords);
-	            System.out.println("Access Level: " + accessLevel);
-	            System.out.println("Other: " + other);
-	            System.out.println("Links: " + links);
-	            return true;
+	            display += "ID: " + newid + "\n";
+	            display += "Title: " + title + "\n";
+	            display += "Description: " + description + "\n";
+	            display += "Body: " + body + "\n";
+	            display += "Level: " + level + "\n";
+	            display += "Group Identifier: " + groupIdentifier + "\n";
+	            display += "Keywords: " + keywords + "\n";
+	            display += "Access Level: " + accessLevel + "\n";
+	            display += "Other: " + other + "\n";
+	            display += "Links: " + links;
+	            return display;
 	        }
 	    }
 	}
@@ -333,9 +335,11 @@ class DatabaseHelper {
 	 * @param groupIdentifier
 	 * @throws Exception
 	 */
-	public void displayArticleByGroup(String groupIdentifier) throws Exception {
+	public String displayArticleByGroup(String groupIdentifier) throws Exception {
 		    
 		    String query = "SELECT * FROM Articles WHERE groupIdentifier = ?";
+		    
+		    String display = "";
 	
 		    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 		        pstmt.setString(1, groupIdentifier); 
@@ -356,17 +360,18 @@ class DatabaseHelper {
 		                    String links = rs.getString("links_misc");
 		                    
 		                    
-		                    System.out.println("ID: " + newid);
-		                    System.out.println("Title: " + title);
-		                    System.out.println("Description: " + description);
-		                    System.out.println("Body: " + body);
-		                    System.out.println("Level: " + level);
-		                    System.out.println("Group Identifier: " + groupID);
-		                    System.out.println("Keywords: " + keywords);
-		                    System.out.println("Access Level: " + accessLevel);
-		                    System.out.println("Other: " + other);
-		                    System.out.println("Links: " + links);
+		                    display += "ID: " + newid + "\n";
+		    	            display += "Title: " + title + "\n";
+		    	            display += "Description: " + description + "\n";
+		    	            display += "Body: " + body + "\n";
+		    	            display += "Level: " + level + "\n";
+		    	            display += "Group Identifier: " + groupID + "\n";
+		    	            display += "Keywords: " + keywords + "\n";
+		    	            display += "Access Level: " + accessLevel + "\n";
+		    	            display += "Other: " + other + "\n";
+		    	            display += "Links: " + links + "\n";
 		                }
+						return display;
 		        }
 		    }
 		}
