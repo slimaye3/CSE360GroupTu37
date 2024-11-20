@@ -1028,13 +1028,25 @@ public class StartCSE360 extends Application {
 
             idDialog.showAndWait().ifPresent(input -> {
                 try {
-                    int articleID = Integer.parseInt(input);
-                    if (!databaseHelper.displayArticle(articleID)) {
+                	int articleID = Integer.parseInt(input);
+                    if (databaseHelper.displayArticle(articleID).compareTo("") == 0) {
                         Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
                         invalidIdAlert.setTitle("Invalid ID");
                         invalidIdAlert.setHeaderText("Article Not Found");
                         invalidIdAlert.setContentText("No article exists with the provided ID.");
                         invalidIdAlert.showAndWait();
+                    }else {
+                    	try {
+                        	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                        	articlesFound.setTitle("Articles");
+                        	articlesFound.setHeaderText("Articles by ID");
+        				    articlesFound.setContentText(databaseHelper.displayArticle(articleID)); 
+                        	articlesFound.showAndWait();
+                        } catch (SQLException ex) {  
+                            showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
+                        } catch (Exception ex) {
+                            showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                        }
                     }
                 } catch (NumberFormatException ex) {
                     Alert invalidInputAlert = new Alert(Alert.AlertType.ERROR);
@@ -1060,7 +1072,11 @@ public class StartCSE360 extends Application {
 
             groupDialog.showAndWait().ifPresent(group -> {
                 try {
-                    databaseHelper.displayArticleByGroup(group);
+                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                	articlesFound.setTitle("Articles");
+                	articlesFound.setHeaderText("Articles by Group");
+				    articlesFound.setContentText(databaseHelper.displayArticleByGroup(group)); 
+                	articlesFound.showAndWait();
                 } catch (SQLException ex) {
                     showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
                 } catch (Exception ex) {
@@ -1422,7 +1438,7 @@ public class StartCSE360 extends Application {
         
         searchButton.setOnAction(e -> {
 			try {
-				articleDisplayManage();
+				articleSearch();
 			} catch (SQLException e1) {
 
 				e1.printStackTrace();
@@ -1436,7 +1452,7 @@ public class StartCSE360 extends Application {
 
         /** Add buttons to the article layout */
         articleLayout.getChildren().addAll(
-        		genericMessageButton, specificMessageButton, goBackButton
+        		genericMessageButton, specificMessageButton, searchButton, goBackButton
         );
 
         /** Create the scene */
@@ -1588,6 +1604,162 @@ public class StartCSE360 extends Application {
         Scene specificMessageScene = new Scene(mainLayout, 300, 300);
         specificMessageStage.setScene(specificMessageScene);
         specificMessageStage.show();
+    }
+    
+    private void articleSearch() throws SQLException{
+        Stage displayStage = new Stage();
+        displayStage.setTitle("Article Search Manager");
+
+        /** Menu Buttons */
+        Button viewByIdButton = new Button("Search Article by ID");
+        Button displayByGroupButton = new Button("Search Articles by Group");
+        Button searchByNameButton = new Button("Search by Names");
+        Button searchByWordsButton = new Button("Search by Word or Phrases");
+        Button backButton = new Button("Go Back");
+
+        /** Layout */
+        VBox buttonLayout = new VBox(10, viewByIdButton, displayByGroupButton, 
+        		searchByNameButton, searchByWordsButton, backButton);
+        buttonLayout.setPadding(new javafx.geometry.Insets(20));
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        /** Scene Setup */
+        Scene displayScene = new Scene(buttonLayout, 400, 300);
+        displayStage.setScene(displayScene);
+        displayStage.show();
+
+        /** Button Actions */
+
+        /** 1. View Article by ID */
+        viewByIdButton.setOnAction(e -> {
+            try {
+				if (!databaseHelper.hasArticles()) {
+				    Alert noArticlesAlert = new Alert(Alert.AlertType.INFORMATION);
+				    noArticlesAlert.setTitle("No Articles");
+				    noArticlesAlert.setHeaderText("No Articles Available");
+				    noArticlesAlert.setContentText("There are currently no articles in the system.");
+				    noArticlesAlert.showAndWait();
+				    return;
+				}
+			} catch (SQLException e1) {
+
+				e1.printStackTrace();
+			}
+
+            /** Input Dialog for Article ID */
+            TextInputDialog idDialog = new TextInputDialog();
+            idDialog.setTitle("View Article by ID");
+            idDialog.setHeaderText("Enter the ID of the Article");
+            idDialog.setContentText("Article ID:");
+
+            idDialog.showAndWait().ifPresent(input -> {
+                try {
+                    int articleID = Integer.parseInt(input);
+                    if (databaseHelper.displayArticle(articleID).compareTo("") == 0) {
+                        Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
+                        invalidIdAlert.setTitle("Invalid ID");
+                        invalidIdAlert.setHeaderText("Article Not Found");
+                        invalidIdAlert.setContentText("No article exists with the provided ID.");
+                        invalidIdAlert.showAndWait();
+                    }else {
+                    	try {
+                        	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                        	articlesFound.setTitle("Articles");
+                        	articlesFound.setHeaderText("Articles by ID");
+        				    articlesFound.setContentText(databaseHelper.displayArticle(articleID)); 
+                        	articlesFound.showAndWait();
+                        } catch (SQLException ex) {  
+                            showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
+                        } catch (Exception ex) {
+                            showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                        }
+                    }
+                } catch (NumberFormatException ex) {
+                    Alert invalidInputAlert = new Alert(Alert.AlertType.ERROR);
+                    invalidInputAlert.setTitle("Invalid Input");
+                    invalidInputAlert.setHeaderText("Non-numeric ID Entered");
+                    invalidInputAlert.setContentText("Please enter a valid numeric ID.");
+                    invalidInputAlert.showAndWait();
+                } catch (SQLException ex) {
+                    showErrorDialog("Error Retrieving Article", "An error occurred while retrieving the article.", ex.getMessage());
+                } catch (Exception e1) {
+
+					e1.printStackTrace();
+				}
+            });
+        });
+
+        /** 2. Display Articles by Group */
+        displayByGroupButton.setOnAction(e -> {
+            TextInputDialog groupDialog = new TextInputDialog();
+            groupDialog.setTitle("Display Articles by Group");
+            groupDialog.setHeaderText("Enter the Group Identifier");
+            groupDialog.setContentText("Group Identifier:");
+
+            groupDialog.showAndWait().ifPresent(group -> {
+                try {
+                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                	articlesFound.setTitle("Articles");
+                	articlesFound.setHeaderText("Articles by Group");
+				    articlesFound.setContentText(databaseHelper.displayArticleByGroup(group)); 
+                	articlesFound.showAndWait();
+                } catch (SQLException ex) {   
+                    showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
+                } catch (Exception ex) {
+                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                }
+            });
+        });
+        
+        /** 2. Display Articles by Name */
+        searchByNameButton.setOnAction(e -> {
+            TextInputDialog nameDialog = new TextInputDialog();
+            nameDialog.setTitle("Display Articles by Name");
+            nameDialog.setHeaderText("Enter the Name");
+            nameDialog.setContentText("Name:");
+
+            nameDialog.showAndWait().ifPresent(name -> {
+                try {
+                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                	articlesFound.setTitle("Articles");
+                	articlesFound.setHeaderText("Articles by Name");
+				    //articlesFound.setContentText(databaseHelper.displayArticleByName(name)); --- CHANGE FOR DATABASE
+                	articlesFound.showAndWait();
+               // } catch (SQLException ex) {
+               //     showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by name.", ex.getMessage());
+                } catch (Exception ex) {
+                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                }
+            });
+        });
+        
+        /** 2. Display Articles by Words */
+        searchByNameButton.setOnAction(e -> {
+            TextInputDialog wordsDialog = new TextInputDialog();
+            wordsDialog.setTitle("Display Articles by Name");
+            wordsDialog.setHeaderText("Enter the Name");
+            wordsDialog.setContentText("Name:");
+
+            wordsDialog.showAndWait().ifPresent(name -> {
+                try {
+                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                	articlesFound.setTitle("Articles");
+                	articlesFound.setHeaderText("Articles by Words");
+				    //articlesFound.setContentText(databaseHelper.displayArticleByWords(name)); --- CHANGE FOR DATABASE
+                	articlesFound.showAndWait();
+               // } catch (SQLException ex) {
+               //     showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by name.", ex.getMessage());
+                } catch (Exception ex) {
+                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                }
+            });
+        });
+
+        /** 4. Go Back */
+        backButton.setOnAction(e -> {
+            displayStage.close();
+            /** Return to article management interface */
+        });
     }
     
     
