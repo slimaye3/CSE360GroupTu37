@@ -26,7 +26,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Pair;
-
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -39,12 +40,15 @@ import java.sql.Date;
  */
 public class StartCSE360 extends Application {
     private DatabaseHelper databaseHelper;
+    private SpecialAccessGroups accessGroups;
 
     /**
      * Constructor to initialize the DatabaseHelper.
+     * @throws Exception 
      */
-    public StartCSE360() {
-        this.databaseHelper = new DatabaseHelper(); // Assume DatabaseHelper is correctly initialized
+    public StartCSE360() throws Exception {
+        this.databaseHelper = new DatabaseHelper();
+        this.accessGroups = new SpecialAccessGroups();// Assume DatabaseHelper is correctly initialized
     }
     
 	/** ------------ Start Method for GUI  ------------ */
@@ -58,6 +62,7 @@ public class StartCSE360 extends Application {
     @Override
     public void start(Stage primaryStage) throws SQLException {
     	databaseHelper.connectToDatabase();
+    	accessGroups.connectToDatabase();
     	
         primaryStage.setTitle("CSE 360 - Welcome Page");
 
@@ -489,8 +494,13 @@ public class StartCSE360 extends Application {
         Button deleteUserButton = new Button("Delete an Account");
         Button changeUserRoleButton = new Button("Change a User's Role");
         Button manageArticlesButton = new Button("Manage Articles");
+        Button createSpecialGroupButton = new Button("Create New Special Group");
         Button logoutButton = new Button("Logout");
 
+        
+      
+        
+        
         /** Set button actions */
         viewUsersButton.setOnAction(e -> {
             System.out.println("Displaying all users...");
@@ -652,6 +662,64 @@ public class StartCSE360 extends Application {
 				e1.printStackTrace();
 			}
         });
+        
+        
+       
+       
+        createSpecialGroupButton.setOnAction(e -> {
+        	Stage articleCreateStage = new Stage();
+        	articleCreateStage.setTitle("Create Group");
+
+        	TextField titleField = new TextField();
+        	titleField.setPromptText("Enter Group Name");
+
+        	TextField mainInstructorField = new TextField();
+        	mainInstructorField.setPromptText("Enter Lead Instructor Name");
+
+        	TextField mainInstructorUsernameField = new TextField();
+        	mainInstructorUsernameField.setPromptText("Enter Instructor Username");
+        	
+
+        	
+        	Button createGroupButton = new Button("Create Group");
+
+        	createGroupButton.setOnAction(event -> {
+
+        	    String groupIdentifier = titleField.getText();
+        	    String leadInstructorName = mainInstructorField.getText();
+        	    String leadInstructorUsername = mainInstructorUsernameField.getText();
+        	    
+
+        	    
+        	    if (groupIdentifier.isEmpty() || leadInstructorName.isEmpty() || leadInstructorUsername.isEmpty()) {
+        	        System.out.println("Please fill in all required fields.");
+        	        return;
+        	    }
+
+        	    try {
+
+        	        accessGroups.addFirstInstructor(leadInstructorUsername, groupIdentifier);
+        	        System.out.println("Group created successfully!");
+        	        System.out.println(accessGroups.listInstructorsAdmin());
+
+        	        articleCreateStage.close();
+        	    } catch (Exception ex) {
+        	        System.out.println("Error creating group: " + ex.getMessage());
+        	        ex.printStackTrace();
+        	    }
+        	});
+
+        	VBox formLayout = new VBox(10);
+        	formLayout.setPadding(new javafx.geometry.Insets(20));
+
+        	formLayout.getChildren().addAll(titleField, mainInstructorField, mainInstructorUsernameField,createGroupButton );
+
+        	Scene articleCreateScene = new Scene(formLayout, 400, 500);
+        	articleCreateStage.setScene(articleCreateScene);
+        	articleCreateStage.show(); 
+        }); 
+        
+    
 
         logoutButton.setOnAction(e -> {
             adminStage.close();
@@ -661,7 +729,7 @@ public class StartCSE360 extends Application {
         /** Add buttons to the admin layout */
         adminLayout.getChildren().addAll(
             viewUsersButton, inviteUserButton, resetPasswordButton, 
-            deleteUserButton, changeUserRoleButton, manageArticlesButton, 
+            deleteUserButton, changeUserRoleButton, manageArticlesButton, createSpecialGroupButton, 
             logoutButton
         );
 
@@ -669,8 +737,7 @@ public class StartCSE360 extends Application {
         Scene adminScene = new Scene(adminLayout, 400, 400);
         adminStage.setScene(adminScene);
         adminStage.show();
-    }
-    
+    }    
     
     
     /**
@@ -705,7 +772,7 @@ public class StartCSE360 extends Application {
             /** Redirect to main menu or login page if needed */
         });
 
-        studentLayout.getChildren().addAll(viewGradesButton, enrollButton, getHelpButton, logoutButton);
+        studentLayout.getChildren().addAll(viewGradesButton, enrollButton, getHelpButton,  logoutButton);
 
         Scene studentHomeScene = new Scene(studentLayout, 300, 300);
         studentHomeStage.setScene(studentHomeScene);
@@ -715,7 +782,7 @@ public class StartCSE360 extends Application {
     /**
      * Displays the instructor home page with specific functionalities.
      */
-    private void instructorHome() {
+    private void instructorHome(){
         Stage instructorHomeStage = new Stage();
         instructorHomeStage.setTitle("Instructor Home Page");
 
@@ -726,7 +793,20 @@ public class StartCSE360 extends Application {
         Button viewClassesButton = new Button("View Classes");
         Button manageAssignmentsButton = new Button("Manage Assignments");
         Button manageArticlesButton = new Button("Manage Articles");
+        Button createGenericHelpArticleButton = new Button("Create General Help Article");
+        Button viewSpecificHelpButton = new Button("View Specific Help Requests");
+        Button createSpecialArticleButton = new Button("Create New Special Article");
+        Button deleteSpecialArticleButton = new Button("Delete Special Article");
+        Button giveAdminRightsButton = new Button("Give Admin Rights");
+        Button addPeopleButton = new Button("Add People");
+        Button listPeopleButton = new Button("List People");
         Button logoutButton = new Button("Logout");
+
+        
+        
+        addPeopleButton.setOnAction(e -> showAddPeopleDialog(instructorHomeStage));
+        listPeopleButton.setOnAction(e -> showListPeopleDialog(instructorHomeStage));
+        
 
         viewClassesButton.setOnAction(e -> showAlert("Info", "Displaying classes..."));
         manageAssignmentsButton.setOnAction(e -> showAlert("Info", "Managing assignments..."));
@@ -738,16 +818,314 @@ public class StartCSE360 extends Application {
 				e1.printStackTrace();
 			}
         });
+        
+        createGenericHelpArticleButton.setOnAction(e ->{
+        	createGenericHelpArticle();
+        });
+        
+        viewSpecificHelpButton.setOnAction(e ->{
+        	Alert queryAlert = new Alert(Alert.AlertType.INFORMATION);
+        	queryAlert.setTitle("Queries");
+        	queryAlert.setHeaderText("Specific Help");
+        	try {
+				queryAlert.setContentText(databaseHelper.displayUnansweredStudentQueries());
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+        	queryAlert.showAndWait();
+        	
+        });
+        
+        deleteSpecialArticleButton.setOnAction(event -> {
+
+            TextInputDialog inputDialog = new TextInputDialog();
+            inputDialog.setTitle("Delete Special Article");
+            inputDialog.setHeaderText("Enter the ID of the article you want to delete:");
+            inputDialog.setContentText("Article ID:");
+
+            Optional<String> result = inputDialog.showAndWait();
+            result.ifPresent(articleIdStr -> {
+                try {
+                    int articleId = Integer.parseInt(articleIdStr);
+                    accessGroups.deleteSpecialArticle(articleId); // Call deleteSpecialArticle method
+                    System.out.println("Article with ID " + articleId + " deleted successfully.");
+                } catch (NumberFormatException ex) {
+                    System.out.println("Invalid ID format. Please enter a valid number.");
+                } catch (Exception ex) {
+                    System.out.println("Error deleting article: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            });
+        });
+       
+        createSpecialArticleButton.setOnAction(e -> {
+        	Stage articleCreateStage = new Stage();
+        	articleCreateStage.setTitle("Create Article");
+
+        	TextField titleField = new TextField();
+        	titleField.setPromptText("Enter Article Title");
+
+        	TextField authorField = new TextField();
+        	authorField.setPromptText("Enter Author Name");
+
+        	TextArea descriptionArea = new TextArea();
+        	descriptionArea.setPromptText("Enter Article Description");
+        	descriptionArea.setWrapText(true);
+
+        	TextArea bodyArea = new TextArea();
+        	bodyArea.setPromptText("Enter Article Body");
+        	bodyArea.setWrapText(true);
+
+        	ChoiceBox<String> levelChoiceBox = new ChoiceBox<>();
+        	levelChoiceBox.getItems().addAll("Beginner", "Intermediate", "Advanced", "Expert");
+        	levelChoiceBox.setValue("Beginner");
+
+        	TextField groupField = new TextField();
+        	groupField.setPromptText("Enter Group Identifier");
+
+        	TextField keywordsField = new TextField();
+        	keywordsField.setPromptText("Enter Article Keywords");
+
+
+        	TextArea otherDetailsArea = new TextArea();
+        	otherDetailsArea.setPromptText("Enter Other Details");
+        	otherDetailsArea.setWrapText(true);
+
+        	TextField linksField = new TextField();
+        	linksField.setPromptText("Enter Links");
+
+        	Button saveArticleButton = new Button("Save Article");
+
+        	saveArticleButton.setOnAction(event -> {
+
+        	    String title = titleField.getText();
+        	    String author = authorField.getText();
+        	    String description = descriptionArea.getText();
+        	    String body = bodyArea.getText();
+        	    String level = levelChoiceBox.getValue();
+        	    String groupIdentifier = groupField.getText();
+        	    String keywords = keywordsField.getText();
+        	    String other = otherDetailsArea.getText();
+        	    String links = linksField.getText();
+
+        	    
+        	    if (title.isEmpty() || author.isEmpty() || description.isEmpty() || body.isEmpty() || groupIdentifier.isEmpty()) {
+        	        System.out.println("Please fill in all required fields.");
+        	        return;
+        	    }
+
+        	    try {
+
+        	        accessGroups.addSpecialArticle(title, author ,description, body, level, groupIdentifier, keywords, other, links);
+        	        System.out.println("Article added successfully!");
+
+        	        articleCreateStage.close();
+        	    } catch (Exception ex) {
+        	        System.out.println("Error adding article: " + ex.getMessage());
+        	        ex.printStackTrace();
+        	    }
+        	});
+
+        	VBox formLayout = new VBox(10);
+        	formLayout.setPadding(new javafx.geometry.Insets(20));
+
+        	formLayout.getChildren().addAll(titleField, authorField, descriptionArea, bodyArea, levelChoiceBox, 
+        	    groupField, keywordsField, otherDetailsArea, linksField, saveArticleButton);
+
+        	Scene articleCreateScene = new Scene(formLayout, 400, 600);
+        	articleCreateStage.setScene(articleCreateScene);
+        	articleCreateStage.show(); 
+        }); 
+        
+        
+        giveAdminRightsButton.setOnAction(e -> {
+            
+            Stage adminRightsStage = new Stage();
+            adminRightsStage.setTitle("Give Admin Rights");
+
+            
+            TextField usernameField = new TextField();
+            usernameField.setPromptText("Enter Username");
+
+            TextField groupNameField = new TextField();
+            groupNameField.setPromptText("Enter Group Name");
+
+            
+            Button submitButton = new Button("Submit");
+
+            submitButton.setOnAction(event -> {
+                String username = usernameField.getText();
+                String groupName = groupNameField.getText();
+
+                
+                if (username.isEmpty() || groupName.isEmpty()) {
+                    System.out.println("Please enter both username and group name.");
+                    return;
+                }
+
+                try {
+					if (!SpecialAccessGroups.adminRights(username, groupName)) {
+					    // Grant admin rights
+					    String result = accessGroups.giveAdminAccess(username, groupName);
+					    System.out.println(result);
+
+					    // Confirmation stage to show success message
+					    Label confirmationLabel = new Label("Admin rights have been granted successfully!");
+					    VBox confirmationVBox = new VBox(10, confirmationLabel);
+					    confirmationVBox.setPadding(new javafx.geometry.Insets(20));
+
+					    Scene confirmationScene = new Scene(confirmationVBox, 300, 100);
+					    Stage confirmationStage = new Stage();
+					    confirmationStage.setScene(confirmationScene);
+					    confirmationStage.setTitle("Confirmation");
+					    confirmationStage.show();
+
+					    // Close the adminRightsStage after successful operation
+					    if (adminRightsStage != null) {
+					        adminRightsStage.close(); // Close only if it's not null
+					    }
+					} else {
+					    System.out.println("User already has admin rights.");
+					    if (adminRightsStage != null) {
+					        adminRightsStage.close(); // Close if already has admin rights
+					    }
+					}
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				} 
+            });
+            // Layout the components in the new stage
+            VBox vbox = new VBox(10);
+            vbox.getChildren().addAll(usernameField, groupNameField, submitButton);
+            vbox.setPadding(new javafx.geometry.Insets(20));
+
+            // Create and set the scene for the new stage
+            Scene adminRightsScene = new Scene(vbox, 300, 200);
+            adminRightsStage.setScene(adminRightsScene);
+            adminRightsStage.show(); // Show the new window
+        });
+        
         logoutButton.setOnAction(e -> {
             instructorHomeStage.close();
             /** Redirect to main menu or login page if needed */
         });
 
-        instructorLayout.getChildren().addAll(viewClassesButton, manageAssignmentsButton, logoutButton);
+        instructorLayout.getChildren().addAll(viewClassesButton, manageAssignmentsButton, 
+        		manageArticlesButton, viewSpecificHelpButton, createGenericHelpArticleButton, createSpecialArticleButton, deleteSpecialArticleButton, 
+        		giveAdminRightsButton, addPeopleButton, listPeopleButton,  logoutButton);
 
-        Scene instructorHomeScene = new Scene(instructorLayout, 300, 300);
+        Scene instructorHomeScene = new Scene(instructorLayout, 300, 350);
         instructorHomeStage.setScene(instructorHomeScene);
         instructorHomeStage.show();
+    }
+    
+    
+    private void createGenericHelpArticle() {
+    	Stage helpCreateStage = new Stage();
+    	helpCreateStage.setTitle("Create Help Article");
+
+        /** Form Fields */
+        TextField titleField = new TextField();
+        titleField.setPromptText("Enter Article Title");
+        
+        TextField authorField = new TextField();
+        authorField.setPromptText("Enter Author Name");
+
+        TextArea descriptionArea = new TextArea();
+        descriptionArea.setPromptText("Enter Article Description");
+        descriptionArea.setWrapText(true);
+
+        TextArea bodyArea = new TextArea();
+        bodyArea.setPromptText("Enter Article Body");
+        bodyArea.setWrapText(true);
+
+        TextField keywordsField = new TextField();
+        keywordsField.setPromptText("Enter Article Keywords");
+
+        TextArea otherDetailsArea = new TextArea();
+        otherDetailsArea.setPromptText("Enter Other Details");
+        otherDetailsArea.setWrapText(true);
+
+        TextField linksField = new TextField();
+        linksField.setPromptText("Enter Links");
+
+        Button submitButton = new Button("Submit");
+        Button cancelButton = new Button("Cancel");
+        
+        /** Form Layout */
+        GridPane formLayout = new GridPane();
+        formLayout.setPadding(new javafx.geometry.Insets(20));
+        formLayout.setHgap(10);
+        formLayout.setVgap(10);
+
+        formLayout.add(new Label("Title:"), 0, 0);
+        formLayout.add(titleField, 1, 0);
+        formLayout.add(new Label("Author:"), 0, 1);
+        formLayout.add(authorField, 1, 1);
+        formLayout.add(new Label("Description:"), 0, 2);
+        formLayout.add(descriptionArea, 1, 2);
+        formLayout.add(new Label("Body:"), 0, 3);
+        formLayout.add(bodyArea, 1, 3);
+        formLayout.add(new Label("Keywords:"), 0, 4);
+        formLayout.add(keywordsField, 1, 4);
+        formLayout.add(new Label("Other:"), 0, 5);
+        formLayout.add(otherDetailsArea, 1, 5);
+        formLayout.add(new Label("Links:"), 0, 6);
+        formLayout.add(linksField, 1, 6);
+
+        HBox buttonLayout = new HBox(10, submitButton, cancelButton);
+        buttonLayout.setAlignment(Pos.CENTER);
+
+        VBox mainLayout = new VBox(10, formLayout, buttonLayout);
+        mainLayout.setPadding(new javafx.geometry.Insets(20));
+
+        /** Submit Button Action */
+        submitButton.setOnAction(e -> {
+            String title = titleField.getText().trim();
+            String author = authorField.getText().trim();
+            String description = descriptionArea.getText().trim();
+            String body = bodyArea.getText().trim();
+            String keywords = keywordsField.getText().trim();
+            String otherDetails = otherDetailsArea.getText().trim();
+            String links = linksField.getText().trim();
+
+            if (title.isEmpty() || description.isEmpty() || body.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Validation Error");
+                alert.setHeaderText("Missing Required Fields");
+                alert.setContentText("Please ensure Title, Description, and Body are filled.");
+                alert.showAndWait();
+                return;
+            }
+
+            try {
+                databaseHelper.createGenericMessageArticles(title, author, description, body, keywords, otherDetails, links);
+                System.out.println("Article Created Successfully!");
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Success");
+                successAlert.setHeaderText("Article Created");
+                successAlert.setContentText("The article has been created successfully.");
+                successAlert.showAndWait();
+                helpCreateStage.close();
+                articleManage(); // Return to the article management interface
+            } catch (SQLException ex) {
+                System.out.println("Error creating article: " + ex.getMessage());
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Database Error");
+                errorAlert.setHeaderText("Failed to Create Article");
+                errorAlert.setContentText("Error: " + ex.getMessage());
+                errorAlert.showAndWait();
+            }
+        });
+
+        /** Cancel Button Action */
+        cancelButton.setOnAction(e -> helpCreateStage.close());
+
+        /** Set the Scene and Show */
+        Scene helpCreateScene = new Scene(mainLayout, 600, 600);
+        helpCreateStage.setScene(helpCreateScene);
+        helpCreateStage.show();
     }
     
     
@@ -817,16 +1195,44 @@ public class StartCSE360 extends Application {
 			}
 		});
         searchArticleButton.setOnAction(e -> {
-            TextInputDialog searchDialog = new TextInputDialog();
-            searchDialog.setTitle("Search Article");
-            searchDialog.setHeaderText("Enter keyword to search:");
-            searchDialog.showAndWait().ifPresent(keyword -> {
-                try {
-                    databaseHelper.searchKeyword(keyword);
-                    System.out.println("Search complete for keyword: " + keyword);
-                } catch (Exception ex) {
-                    System.out.println("Error during keyword search: " + ex.getMessage());
-                }
+            // Prompt for the username
+            TextInputDialog usernameDialog = new TextInputDialog();
+            usernameDialog.setTitle("Search Article");
+            usernameDialog.setHeaderText("Enter your Username:");
+            usernameDialog.setContentText("Username:");
+
+            usernameDialog.showAndWait().ifPresent(username -> {
+                // Prompt for the user level
+                TextInputDialog levelDialog = new TextInputDialog();
+                levelDialog.setTitle("Search Article");
+                levelDialog.setHeaderText("Enter your Level:");
+                levelDialog.setContentText("Level (e.g., admin, user, instructor):");
+
+                levelDialog.showAndWait().ifPresent(level -> {
+                    // Prompt for the group identifier
+                    TextInputDialog groupDialog = new TextInputDialog();
+                    groupDialog.setTitle("Search Article");
+                    groupDialog.setHeaderText("Enter the Group Identifier:");
+                    groupDialog.setContentText("Group Identifier:");
+
+                    groupDialog.showAndWait().ifPresent(groupIdentifier -> {
+                        // Prompt for the search keyword
+                        TextInputDialog keywordDialog = new TextInputDialog();
+                        keywordDialog.setTitle("Search Article");
+                        keywordDialog.setHeaderText("Enter keyword to search:");
+                        keywordDialog.setContentText("Keyword:");
+
+                        keywordDialog.showAndWait().ifPresent(keyword -> {
+                            try {
+                                // Perform the search with all parameters
+                                databaseHelper.searchArticle(username, level, groupIdentifier, keyword);
+                                System.out.println("Search complete for keyword: " + keyword + " with username: " + username + ", level: " + level + ", group identifier: " + groupIdentifier);
+                            } catch (Exception ex) {
+                                System.out.println("Error during keyword search: " + ex.getMessage());
+                            }
+                        });
+                    });
+                });
             });
         });
 
@@ -864,7 +1270,7 @@ public class StartCSE360 extends Application {
         titleField.setPromptText("Enter Article Title");
         
         TextField authorField = new TextField();
-        authorField.setPromptText("Enter Author Title");
+        authorField.setPromptText("Enter Author Name");
 
         TextArea descriptionArea = new TextArea();
         descriptionArea.setPromptText("Enter Article Description");
@@ -936,6 +1342,7 @@ public class StartCSE360 extends Application {
         /** Submit Button Action */
         submitButton.setOnAction(e -> {
             String title = titleField.getText().trim();
+            String author = authorField.getText().trim();
             String description = descriptionArea.getText().trim();
             String body = bodyArea.getText().trim();
             String level = levelChoiceBox.getValue().toLowerCase();
@@ -955,7 +1362,7 @@ public class StartCSE360 extends Application {
             }
 
             try {
-                databaseHelper.createHelpArticle(title, description, body, level, groupIdentifier, keywords, accessLevel, otherDetails, links);
+                databaseHelper.createHelpArticle(title, author, description, body, level, groupIdentifier, keywords, accessLevel, otherDetails, links);
                 System.out.println("Article Created Successfully!");
                 Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
                 successAlert.setTitle("Success");
@@ -1036,72 +1443,125 @@ public class StartCSE360 extends Application {
 
             idDialog.showAndWait().ifPresent(input -> {
                 try {
-                	int articleID = Integer.parseInt(input);
-                    if (databaseHelper.displayArticle(articleID).compareTo("") == 0) {
-                        Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
-                        invalidIdAlert.setTitle("Invalid ID");
-                        invalidIdAlert.setHeaderText("Article Not Found");
-                        invalidIdAlert.setContentText("No article exists with the provided ID.");
-                        invalidIdAlert.showAndWait();
-                    }else {
-                    	try {
-                        	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
-                        	articlesFound.setTitle("Articles");
-                        	articlesFound.setHeaderText("Articles by ID");
-        				    articlesFound.setContentText(databaseHelper.displayArticle(articleID)); 
-                        	articlesFound.showAndWait();
-                        } catch (SQLException ex) {  
-                            showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
+                    int articleID = Integer.parseInt(input);
+                    
+                    // Prompt for the Username
+                    TextInputDialog usernameDialog = new TextInputDialog();
+                    usernameDialog.setTitle("Enter Username");
+                    usernameDialog.setHeaderText("Enter the Username for the Article");
+                    usernameDialog.setContentText("Username:");
+
+                    usernameDialog.showAndWait().ifPresent(username -> {
+                        try {
+                            // Check if the article exists with the provided ID and username
+                            if (databaseHelper.displayArticle(articleID, username).compareTo("") == 0) {
+                                Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
+                                invalidIdAlert.setTitle("Invalid ID");
+                                invalidIdAlert.setHeaderText("Article Not Found");
+                                invalidIdAlert.setContentText("No article exists with the provided ID and username.");
+                                invalidIdAlert.showAndWait();
+                            } else {
+                                try {
+                                    Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                                    articlesFound.setTitle("Articles");
+                                    articlesFound.setHeaderText("Articles by ID and Username");
+                                    articlesFound.setContentText(databaseHelper.displayArticle(articleID, username)); 
+                                    articlesFound.showAndWait();
+                                } catch (SQLException ex) {
+                                    showErrorDialog("Error Displaying Articles", "An error occurred while displaying the article.", ex.getMessage());
+                                } catch (Exception ex) {
+                                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                                }
+                            }
+                        } catch (SQLException ex) {
+                            showErrorDialog("Error Retrieving Article", "An error occurred while retrieving the article.", ex.getMessage());
                         } catch (Exception ex) {
                             showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
                         }
-                    }
+                    });
                 } catch (NumberFormatException ex) {
                     Alert invalidInputAlert = new Alert(Alert.AlertType.ERROR);
                     invalidInputAlert.setTitle("Invalid Input");
                     invalidInputAlert.setHeaderText("Non-numeric ID Entered");
                     invalidInputAlert.setContentText("Please enter a valid numeric ID.");
                     invalidInputAlert.showAndWait();
-                } catch (SQLException ex) {
-                    showErrorDialog("Error Retrieving Article", "An error occurred while retrieving the article.", ex.getMessage());
                 } catch (Exception e1) {
-
-					e1.printStackTrace();
-				}
+                    e1.printStackTrace();
+                }
             });
         });
 
         /** 2. Display Articles by Group */
         displayByGroupButton.setOnAction(e -> {
+            // Prompt for the Group Identifier
             TextInputDialog groupDialog = new TextInputDialog();
             groupDialog.setTitle("Display Articles by Group");
             groupDialog.setHeaderText("Enter the Group Identifier");
             groupDialog.setContentText("Group Identifier:");
 
             groupDialog.showAndWait().ifPresent(group -> {
-                try {
-                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
-                	articlesFound.setTitle("Articles");
-                	articlesFound.setHeaderText("Articles by Group");
-				    articlesFound.setContentText(databaseHelper.displayArticleByGroup(group)); 
-                	articlesFound.showAndWait();
-                } catch (SQLException ex) {
-                    showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
-                } catch (Exception ex) {
-                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
-                }
+                // Prompt for the Username
+                TextInputDialog usernameDialog = new TextInputDialog();
+                usernameDialog.setTitle("Enter Username");
+                usernameDialog.setHeaderText("Enter the Username for Articles");
+                usernameDialog.setContentText("Username:");
+
+                usernameDialog.showAndWait().ifPresent(username -> {
+                    try {
+                        Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                        articlesFound.setTitle("Articles");
+                        articlesFound.setHeaderText("Articles by Group and User");
+                        articlesFound.setContentText(databaseHelper.displayArticleByGroup(group, username)); 
+                        articlesFound.showAndWait();
+                    } catch (SQLException ex) {
+                        showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group and user.", ex.getMessage());
+                    } catch (Exception ex) {
+                        showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                    }
+                });
             });
         });
 
         /** 3. List All Articles */
         listAllButton.setOnAction(e -> {
-            try {
-                databaseHelper.listArticles();
-            } catch (SQLException ex) {
-                showErrorDialog("Error Listing Articles", "An error occurred while listing all articles.", ex.getMessage());
-            } catch (Exception ex) {
-                showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
-            }
+            // Prompt for the username
+            TextInputDialog usernameDialog = new TextInputDialog();
+            usernameDialog.setTitle("Enter Username");
+            usernameDialog.setHeaderText("Enter the Username for Articles");
+            usernameDialog.setContentText("Username:");
+
+            usernameDialog.showAndWait().ifPresent(username -> {
+                try {
+                    StringBuilder allArticles = new StringBuilder("All Articles by User " + username + ":\n");
+
+                    // Call listArticles with the username
+                    databaseHelper.listArticles(username);
+
+                    // Capture the output of listArticles
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    PrintStream originalOut = System.out;
+                    System.setOut(new PrintStream(outputStream));
+
+                    try {
+                        databaseHelper.listArticles(username); 
+                    } finally {
+                        System.setOut(originalOut);
+                    }
+
+                    allArticles.append(outputStream.toString());
+
+                    // Show the alert with the list of articles
+                    Alert articlesAlert = new Alert(Alert.AlertType.INFORMATION);
+                    articlesAlert.setTitle("All Articles");
+                    articlesAlert.setHeaderText("List of All Articles by " + username);
+                    articlesAlert.setContentText(allArticles.toString());
+                    articlesAlert.showAndWait();
+                } catch (SQLException ex) {
+                    showErrorDialog("Error Listing Articles", "An error occurred while listing articles by user.", ex.getMessage());
+                } catch (Exception ex) {
+                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                }
+            });
         });
 
         /** 4. Go Back */
@@ -1486,10 +1946,9 @@ public class StartCSE360 extends Application {
         levelChoiceBox.getItems().addAll("All", "Beginner", "Intermediate", "Advanced", "Expert");
         levelChoiceBox.setValue("All");
         
-        /** Dropdown for Generic Message --- ADD NEW MESSAGES HERE*/
-        ChoiceBox<String> messageChoiceBox = new ChoiceBox<>();
-        messageChoiceBox.getItems().addAll("Empty");
-        messageChoiceBox.setValue("Empty");
+        /**Generic Message*/
+        TextField messageField = new TextField();
+        messageField.setPromptText("Enter Help Question");
         
         /**Group Identifier*/
         TextField groupField = new TextField();
@@ -1506,7 +1965,7 @@ public class StartCSE360 extends Application {
         formLayout.setVgap(10);
 
         formLayout.add(new Label("Generic Message:"), 0, 0);
-        formLayout.add(messageChoiceBox, 1, 0);
+        formLayout.add(messageField, 1, 0);
         formLayout.add(new Label("Level:"), 0, 1);
         formLayout.add(levelChoiceBox, 1, 1);
         formLayout.add(new Label("Group:"), 0, 2);
@@ -1523,13 +1982,16 @@ public class StartCSE360 extends Application {
         sendButton.setOnAction(e -> {
             
             String level = levelChoiceBox.getValue().toLowerCase();
-            String message = messageChoiceBox.getValue().toLowerCase();
+            String message = messageField.getText().toLowerCase();
 
             try {
             	/** Find help article and display it using Database*/
+            	Alert genericArticlesFound = new Alert(Alert.AlertType.INFORMATION);
+            	genericArticlesFound.setTitle("Help Articles");
+            	genericArticlesFound.setHeaderText("Generic Help Found");
+			    genericArticlesFound.setContentText(databaseHelper.displayGenericMessageArticles(message));
+			    genericArticlesFound.showAndWait();
             	
-            	
-                
                 helpManager(); 
             } catch (SQLException ex) {
                 Alert errorAlert = new Alert(Alert.AlertType.ERROR);
@@ -1537,7 +1999,10 @@ public class StartCSE360 extends Application {
                 errorAlert.setHeaderText("Failed to Find Help Articles");
                 errorAlert.setContentText("Error: " + ex.getMessage());
                 errorAlert.showAndWait();
-            }
+            } catch (Exception e1) {
+
+				e1.printStackTrace();
+			}
         });
 
         /** Cancel Button Action */
@@ -1560,11 +2025,15 @@ public class StartCSE360 extends Application {
      */
     private void specificMessage() throws SQLException {
     	Stage specificMessageStage = new Stage();
-    	specificMessageStage.setTitle("Send Generic Message");
+    	specificMessageStage.setTitle("Send Specific Message");
     	
         /** Dropdown for Specific Message --- ADD NEW MESSAGES HERE*/
         TextField messageField = new TextField();
         messageField.setPromptText("Enter Message");
+        
+        TextField userField = new TextField();
+        userField.setPromptText("Enter Your Username");
+
 
         /** Send and Cancel Buttons*/
         Button sendButton = new Button("Send");
@@ -1578,6 +2047,8 @@ public class StartCSE360 extends Application {
 
         formLayout.add(new Label("Specific Message:"), 0, 0);
         formLayout.add(messageField, 1, 0);
+        formLayout.add(new Label("Username:"), 0, 1);
+        formLayout.add(messageField, 1, 1);
         
         HBox buttonLayout = new HBox(10, sendButton, cancelButton);
         buttonLayout.setAlignment(Pos.CENTER);
@@ -1589,12 +2060,13 @@ public class StartCSE360 extends Application {
         sendButton.setOnAction(e -> {
             
             String message = messageField.getText().trim();
+            String user = userField.getText().trim();
 
             try {
             	/** Create Request in Database*/
             	
+            	databaseHelper.addSpecificMessage(user,message);
             	
-                
                 helpManager(); 
             } catch (SQLException ex) {
                 Alert errorAlert = new Alert(Alert.AlertType.ERROR);
@@ -1670,59 +2142,81 @@ public class StartCSE360 extends Application {
             idDialog.showAndWait().ifPresent(input -> {
                 try {
                     int articleID = Integer.parseInt(input);
-                    if (databaseHelper.displayArticle(articleID).compareTo("") == 0) {
-                        Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
-                        invalidIdAlert.setTitle("Invalid ID");
-                        invalidIdAlert.setHeaderText("Article Not Found");
-                        invalidIdAlert.setContentText("No article exists with the provided ID.");
-                        invalidIdAlert.showAndWait();
-                    }else {
-                    	try {
-                        	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
-                        	articlesFound.setTitle("Articles");
-                        	articlesFound.setHeaderText("Articles by ID");
-        				    articlesFound.setContentText(databaseHelper.displayArticle(articleID)); 
-                        	articlesFound.showAndWait();
-                        } catch (SQLException ex) {  
-                            showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
-                        } catch (Exception ex) {
-                            showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                    
+                    // Prompt for the username
+                    TextInputDialog usernameDialog = new TextInputDialog();
+                    usernameDialog.setTitle("Enter Username");
+                    usernameDialog.setHeaderText("Enter the Username for Article Retrieval");
+                    usernameDialog.setContentText("Username:");
+
+                    usernameDialog.showAndWait().ifPresent(username -> {
+                        try {
+  
+                            String articleContent = databaseHelper.displayArticle(articleID, username);
+                            if (articleContent.compareTo("") == 0) {
+                                Alert invalidIdAlert = new Alert(Alert.AlertType.WARNING);
+                                invalidIdAlert.setTitle("Invalid ID or Username");
+                                invalidIdAlert.setHeaderText("Article Not Found");
+                                invalidIdAlert.setContentText("No article exists with the provided ID and username.");
+                                invalidIdAlert.showAndWait();
+                            } else {
+                                try {
+                                    Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                                    articlesFound.setTitle("Articles");
+                                    articlesFound.setHeaderText("Articles by ID and Username");
+                                    articlesFound.setContentText(articleContent); 
+                                    articlesFound.showAndWait();
+                                }
+                                 catch (Exception ex) {
+                                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                                }
+                            }
+                        } catch (SQLException ex) {
+                            showErrorDialog("Error Retrieving Article", "An error occurred while retrieving the article.", ex.getMessage());
+                        } catch (Exception e1) {
+                            e1.printStackTrace();
                         }
-                    }
+                    });
+                    
                 } catch (NumberFormatException ex) {
                     Alert invalidInputAlert = new Alert(Alert.AlertType.ERROR);
                     invalidInputAlert.setTitle("Invalid Input");
                     invalidInputAlert.setHeaderText("Non-numeric ID Entered");
                     invalidInputAlert.setContentText("Please enter a valid numeric ID.");
                     invalidInputAlert.showAndWait();
-                } catch (SQLException ex) {
-                    showErrorDialog("Error Retrieving Article", "An error occurred while retrieving the article.", ex.getMessage());
-                } catch (Exception e1) {
-
-					e1.printStackTrace();
-				}
-            });
-        });
-
-        /** Display Articles by Group */
-        displayByGroupButton.setOnAction(e -> {
-            TextInputDialog groupDialog = new TextInputDialog();
-            groupDialog.setTitle("Display Articles by Group");
-            groupDialog.setHeaderText("Enter the Group Identifier");
-            groupDialog.setContentText("Group Identifier:");
-
-            groupDialog.showAndWait().ifPresent(group -> {
-                try {
-                	Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
-                	articlesFound.setTitle("Articles");
-                	articlesFound.setHeaderText("Articles by Group");
-				    articlesFound.setContentText(databaseHelper.displayArticleByGroup(group)); 
-                	articlesFound.showAndWait();
-                } catch (SQLException ex) {   
-                    showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group.", ex.getMessage());
-                } catch (Exception ex) {
-                    showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                }  catch (Exception e1) {
+                    e1.printStackTrace();
                 }
+            });
+
+            displayByGroupButton.setOnAction(event -> {
+                // Prompt for the Group Identifier
+                TextInputDialog groupDialog = new TextInputDialog();
+                groupDialog.setTitle("Display Articles by Group");
+                groupDialog.setHeaderText("Enter the Group Identifier");
+                groupDialog.setContentText("Group Identifier:");
+
+                groupDialog.showAndWait().ifPresent(group -> {
+                    // Prompt for the Username
+                    TextInputDialog usernameDialog = new TextInputDialog();
+                    usernameDialog.setTitle("Enter Username");
+                    usernameDialog.setHeaderText("Enter the Username for Articles");
+                    usernameDialog.setContentText("Username:");
+
+                    usernameDialog.showAndWait().ifPresent(username -> {
+                        try {
+                            Alert articlesFound = new Alert(Alert.AlertType.INFORMATION);
+                            articlesFound.setTitle("Articles");
+                            articlesFound.setHeaderText("Articles by Group and User");
+                            articlesFound.setContentText(databaseHelper.displayArticleByGroup(group, username)); 
+                            articlesFound.showAndWait();
+                        } catch (SQLException ex) {
+                            showErrorDialog("Error Displaying Articles", "An error occurred while displaying articles by group and user.", ex.getMessage());
+                        } catch (Exception ex) {
+                            showErrorDialog("Unexpected Error", "An unexpected error occurred.", ex.getMessage());
+                        }
+                    });
+                });
             });
         });
         
@@ -1743,6 +2237,7 @@ public class StartCSE360 extends Application {
         });
     }
     
+    
     private void searchArticleByAuthorManager() {
     	Stage searchByAuthorStage = new Stage();
     	searchByAuthorStage.setTitle("Search by Author");
@@ -1754,6 +2249,10 @@ public class StartCSE360 extends Application {
         /**Group Identifier*/
         TextField groupField = new TextField();
         groupField.setPromptText("Leave empty to search all groups");
+        
+        /**Username*/
+        TextField userField = new TextField();
+        userField.setPromptText("Enter your username");
 
         /** Send and Cancel Buttons*/
         Button sendButton = new Button("Send");
@@ -1769,6 +2268,8 @@ public class StartCSE360 extends Application {
         formLayout.add(authorField, 1, 0);
         formLayout.add(new Label("Group:"), 0, 1);
         formLayout.add(groupField, 1, 1);
+        formLayout.add(new Label("Username:"), 0, 2);
+        formLayout.add(userField, 1, 2);
         
         
         HBox buttonLayout = new HBox(10, sendButton, cancelButton);
@@ -1782,10 +2283,15 @@ public class StartCSE360 extends Application {
             
             String author = authorField.getText().trim();
             String group =  groupField.getText().trim();
+            String user = userField.getText().trim();
 
             try {
             	/** Find help article and display it using Database*/
-            	
+            	Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
+            	infoAlert.setTitle("Articles Searched");
+            	infoAlert.setHeaderText("Found Articles:");
+            	infoAlert.setContentText(databaseHelper.searchArticle(user, "public", group, author));
+            	infoAlert.showAndWait();
             	
                 
                 articleSearch(); 
@@ -1811,13 +2317,17 @@ public class StartCSE360 extends Application {
     	Stage searchByWordsStage = new Stage();
     	searchByWordsStage.setTitle("Search by Word or Phrase");
     	
-    	/**Name Field*/
-        TextField wordField = new TextField();
-        wordField.setPromptText("Enter word or phrase to search");
+    	/**Words Field*/
+        TextField wordsField = new TextField();
+        wordsField.setPromptText("Enter word or phrase");
         
         /**Group Identifier*/
         TextField groupField = new TextField();
         groupField.setPromptText("Leave empty to search all groups");
+        
+        /**Username*/
+        TextField userField = new TextField();
+        userField.setPromptText("Enter your username");
 
         /** Send and Cancel Buttons*/
         Button sendButton = new Button("Send");
@@ -1829,10 +2339,12 @@ public class StartCSE360 extends Application {
         formLayout.setHgap(10);
         formLayout.setVgap(10);
 
-        formLayout.add(new Label("Name:"), 0, 0);
-        formLayout.add(wordField, 1, 0);
+        formLayout.add(new Label("Word or Phrase:"), 0, 0);
+        formLayout.add(wordsField, 1, 0);
         formLayout.add(new Label("Group:"), 0, 1);
         formLayout.add(groupField, 1, 1);
+        formLayout.add(new Label("Username:"), 0, 2);
+        formLayout.add(userField, 1, 2);
         
         
         HBox buttonLayout = new HBox(10, sendButton, cancelButton);
@@ -1844,11 +2356,17 @@ public class StartCSE360 extends Application {
         /** Submit Button Action */
         sendButton.setOnAction(e -> {
             
-            String words = wordField.getText().trim();
+            String words = wordsField.getText().trim();
             String group =  groupField.getText().trim();
+            String user = userField.getText().trim();
 
             try {
             	/** Find help article and display it using Database*/
+            	Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
+            	infoAlert.setTitle("Articles Searched");
+            	infoAlert.setHeaderText("Found Articles:");
+            	infoAlert.setContentText(databaseHelper.searchArticle(user, "public", group, words));
+            	infoAlert.showAndWait();
             	
             	
                 
@@ -1903,6 +2421,161 @@ public class StartCSE360 extends Application {
     	errorAlert.showAndWait();
     }
 
+    private void showAddPeopleDialog(Stage adminStage) {
+       
+        VBox addPeopleLayout = new VBox(10);
+        addPeopleLayout.setPadding(new javafx.geometry.Insets(20));
+
+      
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Enter username");
+
+        TextField groupNameField = new TextField();
+        groupNameField.setPromptText("Enter group name");
+
+        
+        Button addAdminButton = new Button("Add Admin");
+        Button addInstructorButton = new Button("Add Instructor");
+        Button addStudentButton = new Button("Add Student");
+        Button backButton = new Button("Back");
+
+       
+        addAdminButton.setOnAction(e -> {
+            try {
+                String username = usernameField.getText();
+                String groupName = groupNameField.getText();
+                accessGroups.addAdmin(username, groupName);
+                System.out.println("Admin added!");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        addInstructorButton.setOnAction(e -> {
+            try {
+                String username = usernameField.getText();
+                String groupName = groupNameField.getText();
+                accessGroups.addInstructor(username, groupName);
+                System.out.println("Instructor added!");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        addStudentButton.setOnAction(e -> {
+            try {
+                String username = usernameField.getText();
+                String groupName = groupNameField.getText();
+                accessGroups.addStudent(username, groupName);
+                System.out.println("Student added!");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        backButton.setOnAction(e -> {
+          
+            try {
+                adminHome();
+                adminStage.close();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+     
+        addPeopleLayout.getChildren().addAll(usernameField, groupNameField, addAdminButton, addInstructorButton, 
+                addStudentButton, backButton);
+
+       
+        Scene addPeopleScene = new Scene(addPeopleLayout, 400, 300);
+        adminStage.setScene(addPeopleScene);
+    }
+    
+    
+    private void showListPeopleDialog(Stage adminStage) {
+        VBox listPeopleLayout = new VBox(10);
+        listPeopleLayout.setPadding(new javafx.geometry.Insets(20));
+
+
+        Button listAdminButton = new Button("List Admins");
+        Button listInstructorsAdminButton = new Button("List Instructors with Admin Rights");
+        Button listInstructorsViewingButton = new Button("List Instructors with Viewing Rights");
+        Button listStudentViewingButton = new Button("List Students with Viewing Rights");
+        Button backButton = new Button("Back");
+
+
+        listAdminButton.setOnAction(e -> listPeople("admin"));
+        listInstructorsAdminButton.setOnAction(e -> listPeople("instructorsAdmin"));
+        listInstructorsViewingButton.setOnAction(e -> listPeople("instructorsViewing"));
+        listStudentViewingButton.setOnAction(e -> listPeople("studentViewing"));
+        
+        backButton.setOnAction(e -> {
+            try {
+                adminHome();
+                adminStage.close();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        listPeopleLayout.getChildren().addAll(listAdminButton, listInstructorsAdminButton, listInstructorsViewingButton,
+                listStudentViewingButton, backButton);
+
+
+        Scene listPeopleScene = new Scene(listPeopleLayout, 400, 300);
+        adminStage.setScene(listPeopleScene);
+    }
+
+    private void listPeople(String type) {
+        String result = "";
+        try {
+            switch (type) {
+                case "admin":
+                    result = accessGroups.listAdmin();
+                    break;
+                case "instructorsAdmin":
+                    result = accessGroups.listInstructorsAdmin();
+                    break;
+                case "instructorsViewing":
+                    result = accessGroups.listInstructorsViewing();
+                    break;
+                case "studentViewing":
+                    result = accessGroups.listStudentViewing();
+                    break;
+                default:
+                    result = "Invalid option!";
+                    break;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+ 
+        showResultDialog(result);
+    }
+
+    private void showResultDialog(String result) {
+        Stage resultStage = new Stage();
+        resultStage.setTitle("List Results");
+
+        VBox resultLayout = new VBox(10);
+        resultLayout.setPadding(new javafx.geometry.Insets(20));
+
+        TextArea resultArea = new TextArea(result);
+        resultArea.setEditable(false);
+        resultLayout.getChildren().add(resultArea);
+
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> resultStage.close());
+
+        resultLayout.getChildren().add(backButton);
+
+ 
+        Scene resultScene = new Scene(resultLayout, 400, 300);
+        resultStage.setScene(resultScene);
+        resultStage.show();
+    }
     
     
 	/** ------------ Alert Function for Errors or Certain Displays  ------------ */
