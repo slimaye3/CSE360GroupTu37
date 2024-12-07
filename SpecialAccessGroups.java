@@ -1,5 +1,6 @@
+
 /**
- * The DatabaseHelper class provides methods for interacting with the database
+ * The SpecialAccessGroups class provides methods for interacting with the database
  * used by the StartCSE360.java system application. It is responsible for managing 
  * user data, including registration, login validation, and role management.
  * 
@@ -18,7 +19,6 @@
  * @version 2.0
  * @date October 30, 2024
  */
-
 
 
 package simpleDatabase;
@@ -57,12 +57,16 @@ class SpecialAccessGroups {
 
 	private static Connection connection = null;
 	private Statement statement = null; 
-	private EncryptionHelper encryptionHelper;
+	private static EncryptionHelper encryptionHelper;
 	
 	public SpecialAccessGroups() throws Exception {
 		encryptionHelper = new EncryptionHelper();
 	}
 	
+	public static Connection getConnection()
+	{
+		return connection;
+	}
 	
 	/** ------------ Database Connection  ------------ */
 
@@ -84,6 +88,7 @@ class SpecialAccessGroups {
 			connection = DriverManager.getConnection(DB_URL, USER, PASS);
 			statement = connection.createStatement(); 
 			createSpecialUserTable();
+			createSpecialArticleTable();
 		} catch (ClassNotFoundException e) {
 			System.err.println("JDBC Driver not found: " + e.getMessage());
 		}
@@ -168,8 +173,8 @@ class SpecialAccessGroups {
 				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
 				+ "username VARCHAR(255), "
 				+ "groupName VARCHAR(255), "
-				+ "adminRights VARCHAR(255), "
-				+ "viewingRights VARCHAR, "
+				+ "adminRights BOOLEAN, "
+				+ "viewingRights BOOLEAN, "
 				+ "role VARCHAR(20))";
 		
 		statement.execute(specialUserTable);
@@ -177,8 +182,8 @@ class SpecialAccessGroups {
 				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
 				+ "username VARCHAR(255), "
 				+ "groupName VARCHAR(255), "
-				+ "adminRights VARCHAR(255), "
-				+ "viewingRights VARCHAR(255), "
+				+ "adminRights BOOLEAN, "
+				+ "viewingRights BOOLEAN, "
 				+ "role VARCHAR(20), "
 				+ "code VARCHAR(255))";
 
@@ -186,6 +191,267 @@ class SpecialAccessGroups {
 		statement.execute(inviteSpecialUserTable);
 	}
 	
+	
+	private void createSpecialArticleTable() throws SQLException {
+		String destroy = "DROP TABLE IF EXISTS specialArticle ";
+		statement.execute(destroy);
+		
+		String articlesTable = "CREATE TABLE IF NOT EXISTS specialArticle ("
+                + "id INT PRIMARY KEY AUTO_INCREMENT, "
+                + "title VARCHAR(255), "
+                + "author VARCHAR(255), "
+                + "description VARCHAR(500), "
+                + "body TEXT, "
+                + "groupIdentifier VARCHAR(100), "
+                + "keywords VARCHAR(500), "
+                + "other VARCHAR(500), "
+                + "links_misc VARCHAR(500), "
+                + "uniqueID BIGINT UNIQUE"
+                + ")";
+		
+        statement.execute(articlesTable);
+        
+	}
+	
+	
+	
+	public String listSpecialArticle(String groupIdentifier) throws Exception
+	{
+		 	String query = "SELECT * FROM specialArticle WHERE groupIdentifier = ? ";
+		    String display = "";
+
+		    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+		        pstmt.setString(1,groupIdentifier); 
+
+		        try (ResultSet rs = pstmt.executeQuery()) {
+		        	
+		        	while (rs.next()) {
+			            int id = rs.getInt("id");
+			            String title = rs.getString("title");
+			         
+			            String groupID = rs.getString("groupIdentifier");
+
+			            display += "ID: " + id + "\n";
+			            display += "Title: " + title + "\n";
+			            
+			            display += "Group Identifier: " + groupID + "\n";
+			        }
+		        }
+		    }
+		    
+		    return display;
+	}
+	
+	
+	
+public String displayArticleByID(String groupIdentifier, int id) throws Exception {
+	    
+	    String query = "SELECT * FROM  WHERE groupIdentifier = ? AND id = ?";
+	    
+	    String display = "";
+
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, groupIdentifier);
+	        pstmt.setInt(1,  id);
+
+	        try (ResultSet rs = pstmt.executeQuery()) {
+	        	
+					while(rs.next()) {
+
+	                     int newid = rs.getInt("id");
+	                    String title = rs.getString("title");
+	                    String author = rs.getString("author");
+	                    String description = rs.getString("description");
+	                    String body = rs.getString("body");
+	                    String keywords = rs.getString("keywords");
+	                    String other = rs.getString("other");
+	                    String links = rs.getString("links_misc");
+	                    
+	                    
+	                    display += "ID: " + newid + "\n";
+	    	            display += "Title: " + title + "\n";
+	    	            display += "Author: " + author + "\n";
+	    	            display += "Description: " + description + "\n";
+	    	            display += "Body: " + body + "\n";
+	    	            display += "Keywords: " + keywords + "\n";
+	    	            display += "Other: " + other + "\n";
+	    	            display += "Links: " + links + "\n";
+	                }
+					
+	        }
+	    }
+	    
+	    
+	    return display;
+	}
+	
+public String displayArticleByAuthor(String author, String groupIdentifier) throws Exception {
+    // Query to search for articles by a specific author and group identifier with public access level
+    String query = "SELECT * FROM specialArticle WHERE author = ? AND groupIdentifier = ?";
+    String display = "";
+
+    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+        pstmt.setString(1, author); // Set the author parameter
+        pstmt.setString(2, groupIdentifier); // Set the groupIdentifier parameter
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                int newid = rs.getInt("id");
+                String title = rs.getString("title");
+                String articleAuthor = rs.getString("author");
+                String description = rs.getString("description");
+                String body = rs.getString("body");
+                
+                String groupID = rs.getString("groupIdentifier");
+                String keywords = rs.getString("keywords");
+                
+                String other = rs.getString("other");
+                String links = rs.getString("links_misc");
+
+                // Display article details
+                display += "ID: " + newid + "\n";
+                display += "Title: " + title + "\n";
+                display += "Author: " + articleAuthor + "\n";
+                display += "Description: " + description + "\n";
+                display += "Body: " + body + "\n";
+                
+                display += "Group Identifier: " + groupID + "\n";
+                display += "Keywords: " + keywords + "\n";
+               
+                display += "Other: " + other + "\n";
+                display += "Links: " + links + "\n";
+            }
+        }
+    }
+    return display;
+}
+
+public String searchArticlesByWord(String searchTerm, String groupIdentifier) throws Exception {
+    
+    String searchPattern = "%" + searchTerm + "%";
+    String display = "";
+
+    
+    String query = "SELECT * FROM specialArticle WHERE (title LIKE ? OR description LIKE ? OR keywords LIKE ?) ";
+    
+    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+       
+        pstmt.setString(1, searchPattern); // Search in title
+        pstmt.setString(2, searchPattern); // Search in description
+        pstmt.setString(3, searchPattern); // Search in keywords
+        
+        if (groupIdentifier != null) {
+            pstmt.setString(4, groupIdentifier); 
+        }
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                int newid = rs.getInt("id");
+                String title = rs.getString("title");
+                String author = rs.getString("author");
+                String description = rs.getString("description");
+                String body = rs.getString("body");
+                
+                String groupID = rs.getString("groupIdentifier");
+                String keywords = rs.getString("keywords");
+                String other = rs.getString("other");
+                String links = rs.getString("links_misc");
+
+                // Display article details
+                display += "ID: " + newid + "\n";
+                display += "Title: " + title + "\n";
+                display += "Author: " + author + "\n";
+                display += "Description: " + description + "\n";
+                display += "Body: " + body + "\n";
+                
+                display += "Group Identifier: " + groupID + "\n";
+                display += "Keywords: " + keywords + "\n";
+                display += "Other: " + other + "\n";
+                display += "Links: " + links + "\n";
+     
+                }
+            }
+        }
+    return display;
+}
+
+
+
+
+	/** ------------ Edit Article Methods (2)  ------------ */
+	
+
+	/**
+	 * Get body of article for edit.
+	 * 
+	 * @param id
+	 * @return
+	 * @throws Exception 
+	 */
+	public static String getArticleBodyByID(int id) throws Exception
+	{
+	    String display = "";
+	
+	    String query = "SELECT body FROM specialArticle WHERE id = ?";
+	
+	     try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	            pstmt.setInt(1, id);
+	
+	            try (ResultSet rs = pstmt.executeQuery()) {
+	                if (!rs.next()) {
+	                    return display;
+	                }
+	
+	                String body = rs.getString("body");
+	               
+	                
+	                display += "Body: " + body + "\n";
+	                return display;
+	            }
+	        }
+	
+	
+	}
+	
+	/**
+	 * Insert text into the body of an article.
+	 * 
+	 * @param id
+	 * @param body
+	 * @throws SQLException
+	 */
+	public static void insertArticleBody(int id, String body) throws SQLException
+	{ 
+	    String query = "UPDATE specialArticle SET body = ? WHERE id = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, body);
+	        pstmt.setInt(2, id);
+	
+	        try (ResultSet rs = pstmt.executeQuery()) {
+	        }
+	    }
+	}
+
+
+	public void restorationAdd(String title, String author, String description, String body, String groupIdentifier, 
+			String keywords, String other, String links_misc, long UID) throws SQLException
+	{
+			String insertArticle = "INSERT INTO specialArticle (title, author, description, body, groupIdentifier, keywords, other, links_misc, uniqueID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		
+		try (PreparedStatement pstmt = connection.prepareStatement(insertArticle))
+		{
+			pstmt.setString(1, title);
+			pstmt.setString(2, author);
+			pstmt.setString(3, description);
+			pstmt.setString(4, body);
+			pstmt.setString(5, groupIdentifier);
+		    pstmt.setString(6, keywords);
+		    pstmt.setString(7, other);
+		    pstmt.setString(8, links_misc);
+		    pstmt.setLong(9, UID);
+		    pstmt.executeUpdate();
+		} 
+	}
 	
 	/**
 	 * Registers a new user in the cse360users table with the provided details. 
@@ -198,16 +464,16 @@ class SpecialAccessGroups {
 	public void addFirstInstructor(String username, String groupName) throws Exception
 	{
 		String role = "instructor";
-		String adminRights = "true";
-		String vRights = "true";
+		boolean adminRights = true;
+		boolean vRights = true;
 		String insertFirst = "INSERT INTO specialUsers (username, groupName, adminRights, viewingRights, role)"
 				+ "VALUES (?, ?, ?, ?, ?)";
 		try (PreparedStatement pstmt = connection.prepareStatement(insertFirst))
 		{
 			pstmt.setString(1, username);
 			pstmt.setString(2, groupName);
-			pstmt.setString(3, adminRights);
-			pstmt.setString(4, vRights);
+			pstmt.setBoolean(3, adminRights);
+			pstmt.setBoolean(4, vRights);
 			pstmt.setString(5, role);
 		    pstmt.executeUpdate();
 		} 
@@ -221,10 +487,10 @@ class SpecialAccessGroups {
 	 * admin do not have access to anything until specifically given. 
 	 * @throws SQLException if there is an error executing the insert command.
 	 */
-	public void addAdmin(String username, String groupName) throws Exception
+	public static void addAdmin(String username, String groupName) throws Exception
 	{
-		String adminRights = "false";
-		String vRights = "false";
+		boolean adminRights = true;
+		boolean vRights = true;
 		String role = "admin";
 		
 		String insertUser = "INSERT INTO specialUsers (username, groupName, adminRights, viewingRights, role)"
@@ -233,12 +499,87 @@ class SpecialAccessGroups {
 		{
 			pstmt.setString(1, username);
 			pstmt.setString(2, groupName);
-			pstmt.setString(3, adminRights);
-			pstmt.setString(4, vRights);
+			pstmt.setBoolean(3, adminRights);
+			pstmt.setBoolean(4, vRights);
 			pstmt.setString(5, role);
 		    pstmt.executeUpdate();
 		} 
 	}
+	
+	
+	public void backupSpecialSystemToFile(String file) throws Exception
+	{
+		String backup = "SELECT * FROM specialArticle";
+	    
+	    try(Statement stmt = connection.createStatement())
+	    {
+	    	ResultSet rs = stmt.executeQuery(backup);
+	    	BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+	    	
+	    	writer.write("ID, Title, Author, Description, Body, Group Identifier, Keywords, Other, Links, Unique ID");
+	        writer.newLine();
+	    	
+	    	while (rs.next()) {
+	    		int id = rs.getInt("id");
+	            String title = rs.getString("title");
+	            String author = rs.getString("author");
+	            String description = rs.getString("description");
+	            String body = rs.getString("body");
+	            String groupID = rs.getString("groupIdentifier");
+	            String keywords = rs.getString("keywords");
+	            String other = rs.getString("other");
+	            String links = rs.getString("links_misc");
+	            String uniqueID = rs.getString("uniqueID");
+	            
+	            writer.write(id + "," + title + "," + author + "," + description + "," + body + "," +
+	                         groupID + "," + keywords + "," + other + "," + links + "," + uniqueID);
+	            writer.newLine();
+	        }
+	    	
+	    	writer.close();
+	    	rs.close(); 
+	    }
+
+	}
+	
+	
+	public void backUpSpecialGroupToFile(String file, String groupIdentifier) throws Exception {
+	    String backup = "SELECT * FROM specialArticle WHERE groupIdentifier = ?";
+
+	    try (PreparedStatement pstmt = connection.prepareStatement(backup)) {
+	        pstmt.setString(1, groupIdentifier); 
+
+	        ResultSet rs = pstmt.executeQuery();
+	        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+
+	        writer.write("ID, Title, Author, Description, Body, Group Identifier, Keywords, Other, Links, Unique ID");
+	        writer.newLine();
+
+	        while (rs.next()) {
+	    		int id = rs.getInt("id");
+	            String title = rs.getString("title");
+	            String author = rs.getString("author");
+	            String description = rs.getString("description");
+	            String body = rs.getString("body");
+	            String groupID = rs.getString("groupIdentifier");
+	            String keywords = rs.getString("keywords");
+	            String other = rs.getString("other");
+	            String links = rs.getString("links_misc");
+	            String uniqueID = rs.getString("uniqueID");
+	            
+	            writer.write(id + "," + title + "," + author + "," + description + "," + body + "," +
+	                         groupID + "," + keywords + "," + other + "," + links + "," + uniqueID);
+	            writer.newLine();
+	        }
+	    	
+	    	writer.close();
+	    	rs.close(); 
+	    }
+	}
+	
+	
+	
+	
 	
 	/**
 	 * Registers a new user in the cse360users table with the provided details. 
@@ -248,11 +589,11 @@ class SpecialAccessGroups {
 	 * instructors added to a precreated group are automatically gievn viewing rights but not admin rights  
 	 * @throws SQLException if there is an error executing the insert command.
 	 */
-	public void addInstructor(String username, String groupName) throws Exception
+	public static void addInstructor(String username, String groupName) throws Exception
 	{
-		String adminRights = "false";
-		String vRights = "true";
-		String role = "admin";
+		boolean adminRights = false;
+		boolean vRights = true;
+		String role = "instructor";
 		
 		String insertUser = "INSERT INTO specialUsers (username, groupName, adminRights, viewingRights, role)"
 				+ "VALUES (?, ?, ?, ?, ?)";
@@ -260,8 +601,8 @@ class SpecialAccessGroups {
 		{
 			pstmt.setString(1, username);
 			pstmt.setString(2, groupName);
-			pstmt.setString(3, adminRights);
-			pstmt.setString(4, vRights);
+			pstmt.setBoolean(3, adminRights);
+			pstmt.setBoolean(4, vRights);
 			pstmt.setString(5, role);
 		    pstmt.executeUpdate();
 		} 
@@ -278,8 +619,8 @@ class SpecialAccessGroups {
 	 */
 	public void addStudent(String username, String groupName) throws Exception
 	{
-		String adminRights = "false";
-		String vRights = "false";
+		boolean adminRights = false;
+		boolean vRights = true;
 		String role = "student";
 		
 		String insertUser = "INSERT INTO specialUsers (username, groupName, adminRights, viewingRights, role)"
@@ -288,8 +629,8 @@ class SpecialAccessGroups {
 		{
 			pstmt.setString(1, username);
 			pstmt.setString(2, groupName);
-			pstmt.setString(3, adminRights);
-			pstmt.setString(4, vRights);
+			pstmt.setBoolean(3, adminRights);
+			pstmt.setBoolean(4, vRights);
 			pstmt.setString(5, role);
 		    pstmt.executeUpdate();
 		} 
@@ -335,7 +676,7 @@ class SpecialAccessGroups {
 			String giveAccess = "UPDATE specialUsers SET adminRights = ? WHERE username = ? AND groupName = ?"; 
 					
 			try (PreparedStatement pstmt = connection.prepareStatement(giveAccess)) {
-		        pstmt.setString(1, "true"); 
+		        pstmt.setBoolean(1, true); 
 		        pstmt.setString(2, username); 
 		        pstmt.setString(3, groupName);
 		        
@@ -364,7 +705,7 @@ class SpecialAccessGroups {
 		{
 			String giveAccess = "UPDATE specialUsers SET viewingRights = ? WHERE username = ? AND groupName = ?"; 
 			try (PreparedStatement pstmt = connection.prepareStatement(giveAccess)) {
-		        pstmt.setString(1, "true"); 
+		        pstmt.setBoolean(1, true); 
 		        pstmt.setString(2, username); 
 		        pstmt.setString(3, groupName); 
 		        
@@ -398,76 +739,28 @@ class SpecialAccessGroups {
 	 * @param links Any links associated with the article
 	 * @throws SQLException if there is an error executing SQL commands.
 	 */
-	public void addSpecialArticle(String title, String author,String description, String body, String level, String groupIdentifier, 
-			String keywords,String accessLevel, String other, String links) throws Exception
+	public void addSpecialArticle(String title, String author,String description, String body, String groupIdentifier, 
+			String keywords, String other, String links) throws Exception
 	{
 
 		long uniqueID = generateUniqueID();
-		String specialRestriction = "restricted";
-		accessLevel = specialRestriction;
 		String UID = String.valueOf(uniqueID);
-//		byte[] iv = EncryptionUtils.getInitializationVector(UID.toCharArray());
+			
 		
-		
-		String encryptedTitle = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(title.getBytes(),EncryptionUtils.getInitializationVector(UID.toCharArray()))
-		);
-		String encryptedAuthor = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(author.getBytes(),EncryptionUtils.getInitializationVector(UID.toCharArray()))
-		);
-		String encryptedDescription = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(description.getBytes(),EncryptionUtils.getInitializationVector(UID.toCharArray()))
-		);
-		String encryptedBody = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(body.getBytes(),EncryptionUtils.getInitializationVector(UID.toCharArray()))
-		);
-		String encryptedLevel = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(level.getBytes(),EncryptionUtils.getInitializationVector(UID.toCharArray()))
-		);
-		String encryptedGID = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(groupIdentifier.getBytes(),EncryptionUtils.getInitializationVector(UID.toCharArray()))
-		);
-		String encryptedKeywords = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(String.join(", ", keywords).getBytes(), EncryptionUtils.getInitializationVector(UID.toString().toCharArray()))
-		);
-		String encryptedAccessLevel = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(accessLevel.getBytes(),EncryptionUtils.getInitializationVector(UID.toCharArray()))
-		);
-		String encryptedOther = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(String.join(", ", other).getBytes(), EncryptionUtils.getInitializationVector(UID.toString().toCharArray()))
-		);
-		String encryptedLinks = Base64.getEncoder().encodeToString(
-				encryptionHelper.encrypt(String.join(", ", links).getBytes(), EncryptionUtils.getInitializationVector(UID.toString().toCharArray()))
-		);
-		
-//		 String encryptedTitle = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(title.getBytes(), iv));
-//		    String encryptedAuthor = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(author.getBytes(), iv));
-//		    String encryptedDescription = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(description.getBytes(), iv));
-//		    String encryptedBody = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(body.getBytes(), iv));
-//		    String encryptedLevel = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(level.getBytes(), iv));
-//		    String encryptedGID = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(groupIdentifier.getBytes(), iv));
-//		    String encryptedKeywords = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(keywords.getBytes(), iv));
-//		    String encryptedAccessLevel = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(accessLevel.getBytes(), iv));
-//		    String encryptedOther = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(other.getBytes(), iv));
-//		    String encryptedLinks = Base64.getEncoder().encodeToString(encryptionHelper.encrypt(links.getBytes(), iv));
-		
-		
-		String insertArticle = "INSERT INTO Articles (title, author, description, body, level, groupIdentifier, keywords, accessLevel, other, links_misc, uniqueID) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?)";
+		String insertArticle = "INSERT INTO specialArticle (title, author, description, body, groupIdentifier, keywords, other, links_misc, uniqueID) "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		
 		try (PreparedStatement pstmt = connection.prepareStatement(insertArticle))
 		{
-			pstmt.setString(1, encryptedTitle);
-			pstmt.setString(2, encryptedAuthor);
-			pstmt.setString(3, encryptedDescription);
-			pstmt.setString(4, encryptedBody);
-			pstmt.setString(5, encryptedLevel);
-			pstmt.setString(6, encryptedGID);
-		    pstmt.setString(7, encryptedKeywords);
-		    pstmt.setString(8, encryptedAccessLevel);
-		    pstmt.setString(9, encryptedOther);
-		    pstmt.setString(10, encryptedLinks);
-		    pstmt.setLong(11, uniqueID);
+			pstmt.setString(1, title);
+			pstmt.setString(2, author);
+			pstmt.setString(3, description);
+			pstmt.setString(4, body);
+			pstmt.setString(5, groupIdentifier);
+		    pstmt.setString(6, keywords);
+		    pstmt.setString(7, other);
+		    pstmt.setString(8, links);
+		    pstmt.setLong(9, uniqueID);
 		    pstmt.executeUpdate();
 		} 
 	}
@@ -478,7 +771,7 @@ class SpecialAccessGroups {
 	 * */
 	public String listAdmin() throws Exception
 	{
-		String query = "SELECT * FROM specialUsers WHERE role = 'admin' AND adminRights = 'true' and viewingRights = 'true' ";
+		String query = "SELECT * FROM specialUsers WHERE role = 'admin' AND adminRights = true and viewingRights = true ";
 		String display = "";
 		try (PreparedStatement stmt = connection.prepareStatement(query);
 		         ResultSet rs = stmt.executeQuery()) {		
@@ -500,7 +793,26 @@ class SpecialAccessGroups {
 	 * */
 	public String listInstructorsAdmin() throws Exception
 	{
-		String query = "SELECT * FROM specialUsers WHERE role = 'instructor' AND adminRights = 'true' ";
+		String query = "SELECT * FROM specialUsers WHERE role = 'instructor' AND adminRights = true ";
+		String display = "";
+		try (PreparedStatement stmt = connection.prepareStatement(query);
+		         ResultSet rs = stmt.executeQuery()) {		
+		        while (rs.next()) {
+		            int id = rs.getInt("id");
+		            String username = rs.getString("username");
+		            String groupName = rs.getString("groupName");
+		            display += "ID: " + id + "\n";
+		            display += "Username: " + username + "\n";
+		            display += "Group Name: " + groupName + "\n";
+		        }
+		    }
+		return display;
+	}
+	
+	
+	public String listAllSpecialAccessUsers() throws Exception
+	{
+		String query = "SELECT * FROM specialUsers id = ? ";
 		String display = "";
 		try (PreparedStatement stmt = connection.prepareStatement(query);
 		         ResultSet rs = stmt.executeQuery()) {		
@@ -522,7 +834,7 @@ class SpecialAccessGroups {
 	 * */
 	public String listInstructorsViewing() throws Exception
 	{
-		String query = "SELECT * FROM specialUsers WHERE role = 'instructor' AND viewingRights = 'true' ";
+		String query = "SELECT * FROM specialUsers WHERE role = 'instructor' AND viewingRights = true ";
 		String display = "";
 		try (PreparedStatement stmt = connection.prepareStatement(query);
 		         ResultSet rs = stmt.executeQuery()) {		
@@ -544,7 +856,7 @@ class SpecialAccessGroups {
 	 * */
 	public String listStudentViewing() throws Exception
 	{
-		String query = "SELECT * FROM specialUsers WHERE role = 'student' AND viewingRights = 'true' ";
+		String query = "SELECT * FROM specialUsers WHERE role = 'student' AND viewingRights = true ";
 		String display = "";
 		try (PreparedStatement stmt = connection.prepareStatement(query);
 		         ResultSet rs = stmt.executeQuery()) {		
@@ -568,7 +880,7 @@ class SpecialAccessGroups {
 	 * */
 	public static boolean adminRights(String username, String groupName) throws Exception
 	{
-		String query = "SELECT * FROM specialUsers WHERE adminRights = 'true' AND username = ? AND groupName = ? ";
+		String query = "SELECT * FROM specialUsers WHERE adminRights = true AND username = ? AND groupName = ? ";
 		 try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 		        
 		        pstmt.setString(1, username);
@@ -593,7 +905,7 @@ class SpecialAccessGroups {
 	
 	public static boolean vRights(String username, String groupName) throws Exception
 	{
-		String query = "SELECT * FROM specialUsers WHERE viewingRights = 'true' AND username = ? AND groupName = ? ";
+		String query = "SELECT * FROM specialUsers WHERE viewingRights = true AND username = ? AND groupName = ? ";
 		 try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 		        
 		        pstmt.setString(1, username);
@@ -613,7 +925,7 @@ class SpecialAccessGroups {
 	//Deletes special article
 	public void deleteSpecialArticle(int id) throws Exception
 	{
-		String removeArticle = "DELETE FROM Articles WHERE id = ?";
+		String removeArticle = "DELETE FROM specialArticle WHERE id = ?";
 		try (PreparedStatement pstmt = connection.prepareStatement(removeArticle))
 		{
 			pstmt.setInt(1, id);
@@ -623,47 +935,17 @@ class SpecialAccessGroups {
 	}
 	
 	/*** Deletes a specific user given an id*/
-	public void deleteSpecialUser(int id) throws Exception
+	public void deleteSpecialUser(String username) throws Exception
 	{
-		String removeArticle = "DELETE FROM specialUsers WHERE id = ?";
+		String removeArticle = "DELETE FROM specialUsers WHERE username = ?";
 		try (PreparedStatement pstmt = connection.prepareStatement(removeArticle))
 		{
-			pstmt.setInt(1, id);
+			pstmt.setString(1, username);
 			pstmt.executeUpdate();
 		}
 	        
 	}
 	
-	
-	/*** Invites a specialUser to going the group*/
-	public void inviteSpecialUsers(String groupName, String code, String role) throws SQLException {
-		String insertInvite = "INSERT INTO specialInvites (cgroupName, code, role) VALUES (?, ?, ?)";
-		try (PreparedStatement pstmt = connection.prepareStatement(insertInvite)) {
-			pstmt.setString(1, groupName);
-			pstmt.setString(2, code);
-			pstmt.setString(3, role);
-			pstmt.executeUpdate();
-		}
-	}
-
-	/*** Checks if the specialInvite code exists to add the user*/
-	public boolean doesSpecialInviteExist(String code) throws SQLException{
-		String query = "SELECT COUNT(*) FROM specialInvites WHERE code = ?";
-	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-	        
-	        pstmt.setString(1, code);
-	        ResultSet rs = pstmt.executeQuery();
-	        
-	        if (rs.next()) {
-	            // If the count is greater than 0, the user exists
-	            return rs.getInt(1) > 0;
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return false; // If an error occurs, assume user doesn't exist
-	}
-
 	
 	/*** Checks if the username inputed matches any user in the special access database*/
 	public static boolean doesSpecialUserExist(String username) {
@@ -697,16 +979,6 @@ class SpecialAccessGroups {
 		
 		}
 		return role; 
-	}
-	
-
-	/***Revokes an invite to the special access group*/
-	public void removeSpecialInvite(String code) throws SQLException{
-		String query = "DELETE FROM specialInvities WHERE code = ?";
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, code);
-			pstmt.executeUpdate();
-		}
 	}
 	
 
