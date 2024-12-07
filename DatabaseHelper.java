@@ -1,5 +1,3 @@
-
-
 /**
  * The DatabaseHelper class provides methods for interacting with the database
  * used by the StartCSE360.java system application. It is responsible for managing 
@@ -62,9 +60,16 @@ class DatabaseHelper {
 	static final String USER = "sa"; 
 	static final String PASS = ""; 
 
-	private Connection connection = null;
+	private static Connection connection = null;
 	private Statement statement = null; 
+	
 	private EncryptionHelper encryptionHelper;
+	
+	public static Connection getConnection()
+	{
+		return connection;
+	}
+	
 	
 	
 	/** ------------ Database Connection  ------------ */
@@ -130,52 +135,12 @@ class DatabaseHelper {
 	}
 
 	
-	private long generateUniqueID()
+	public long generateUniqueID()
 	{
 		long value = UUID.randomUUID().getMostSignificantBits();
 		return value;
 	}
 	
-	
-	/**
-	 * Creates the necessary tables in the database if they do not already exist. 
-	 * This includes an article Table.
-	 * 
-	 * @throws SQLException if there is an error executing SQL commands.
-	 */
-//
-//	private void createHelpTable() throws SQLException {
-//		String destroy = "DROP TABLE IF EXISTS Articles ";
-//		statement.execute(destroy);
-//		
-//		String articlesTable = "CREATE TABLE IF NOT EXISTS Articles ("
-//                + "id INT PRIMARY KEY AUTO_INCREMENT, "
-//                + "title VARCHAR(255), "
-//                + "author VARCHAR(255), "
-//                + "description VARCHAR(500), "
-//                + "body TEXT, "
-//                + "level VARCHAR(255) CHECK (level IN ('beginner', 'intermediate', 'advanced', 'expert', 'N/A')), "
-//                + "groupIdentifier VARCHAR(100), "
-//                + "keywords VARCHAR(500), "
-//                + "accessLevel VARCHAR(255) DEFAULT 'public' CHECK (accessLevel IN ('public', 'restricted')), "
-//                + "other VARCHAR(500), "
-//                + "links_misc VARCHAR(500), "
-//                + "uniqueID BIGINT UNIQUE"
-//                + ")";
-//		
-//        statement.execute(articlesTable);
-//        
-//        String studentQueries = "CREATE TABLE IF NOT EXISTS queries ("
-//        		+ "id INT PRIMARY KEY AUTO_INCREMENT, "
-//        		+ "usernmae VARCHAR(255), "
-//        		+ "question TEXT, "
-//        		+ "answered BOOLEAN DEFAULT FALSE"
-//        		+ ")";
-//        
-//        statement.execute(studentQueries);
-//        
-//	}
-//	
 	
 	
 
@@ -318,7 +283,7 @@ class DatabaseHelper {
 	 * and all articles that the user has been granted access for will be decrypted and listed
 	 * Otherwise only the articles whose accessLevel is public will be able to be listed.  
 	 * */
-	public String listArticles(String username) throws Exception{ 
+public String listArticles() throws Exception{ 
 		
 		String findArticle = "SELECT * FROM Articles WHERE accessLevel = 'public' "; 
 		String display = "";
@@ -338,64 +303,9 @@ class DatabaseHelper {
 		        }
 		    }
 		
-		String checkGroup = SpecialAccessGroups.getUserGroup(username);
-		if(checkGroup != null && String.valueOf(SpecialAccessGroups.vRights(username, checkGroup)) == "true")
-		{
-			String groupIdentifier = SpecialAccessGroups.getUserGroup(username);
-			findArticle = "SELECT * FROM Articles WHERE groupIdentifier = ? ";
-			try(PreparedStatement pstmt = connection.prepareStatement(findArticle))
-			{
-				pstmt.setString(1, groupIdentifier);
-				try(ResultSet rs = pstmt.executeQuery())
-				{
-					while(rs.next()) {  
-						int id  = rs.getInt("id"); 
-						long UID = rs.getLong("uniqueID");
-						String key = String.valueOf(UID);
-						String title = rs.getString("title"); 
-						String level = rs.getString("level");
-						String groupID = rs.getString("groupIdentifier");
-						
-						char[] decryptedTitle = EncryptionUtils.toCharArray(
-								encryptionHelper.decrypt(
-										Base64.getDecoder().decode(
-												title
-										), 
-										EncryptionUtils.getInitializationVector(key.toCharArray())
-								)	
-						);
-						
-						char[] decryptedLevel = EncryptionUtils.toCharArray(
-								encryptionHelper.decrypt(
-										Base64.getDecoder().decode(
-												level
-										), 
-										EncryptionUtils.getInitializationVector(key.toCharArray())
-								)	
-						);
-						
-						char[] decryptedGID = EncryptionUtils.toCharArray(
-								encryptionHelper.decrypt(
-										Base64.getDecoder().decode(
-												groupID
-										), 
-										EncryptionUtils.getInitializationVector(key.toCharArray())
-								)	
-						);
-						
-						display += "ID: " + id + "\n";
-			            display += "Title: " + decryptedTitle + "\n";
-			            display += "Level: " + decryptedLevel + "\n";
-			            display += "Group Identifier: " + decryptedGID + "\n";
-						
-					} 
-				}
-					
-				}
-			}
+			
 		return display;	
 	}
-	
 	
 
 	
@@ -406,7 +316,8 @@ class DatabaseHelper {
 	 * If a group is found and they have viewing rights for that user and the ID matches then that article will be decrypted and displayed. 
 	 * Otherwise only the articles whose accessLevel is public will be able to be displayed.  
 	 * */
-	public String displayArticle(int id, String username) throws Exception
+		
+	public String displayArticle(int id) throws Exception
 	{
 		 	String query = "SELECT * FROM Articles WHERE id = ? AND accessLevel = 'public' ";
 		    String display = "";
@@ -446,139 +357,10 @@ class DatabaseHelper {
 		        }
 		    }
 		    
-		   String checkGroup = SpecialAccessGroups.getUserGroup(username);
-		    if(checkGroup != null && String.valueOf(SpecialAccessGroups.vRights(username, checkGroup)) == "true")
-		    {
-		    	String groupIdentifier = SpecialAccessGroups.getUserGroup(username);
-		    	query = "SELECT * FROM Articles WHERE id = ? AND groupIdentifier = ? ";
-		    	try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			        pstmt.setInt(1, id); 
-			        pstmt.setString(2, groupIdentifier); 
-
-			        try (ResultSet rs = pstmt.executeQuery()) {
-			        	
-							while(rs.next()) {
-
-			                    int newid = rs.getInt("id");
-			                    long UID = rs.getLong("uniqueID");
-			    				String key = String.valueOf(UID);
-			                    String title = rs.getString("title");
-			                    String author = rs.getString("author");
-			                    String description = rs.getString("description");
-			                    String body = rs.getString("body");
-			                    String level = rs.getString("level");
-			                    String groupID = rs.getString("groupIdentifier");
-			                    String keywords = rs.getString("keywords");
-			                    String accessLevel = rs.getString("accessLevel");
-			                    String other = rs.getString("other");
-			                    String links = rs.getString("links_misc");
-			                    
-			                    
-			                    char[] decryptedTitle = EncryptionUtils.toCharArray(
-			    						encryptionHelper.decrypt(
-			    								Base64.getDecoder().decode(
-			    										title
-			    								), 
-			    								EncryptionUtils.getInitializationVector(key.toCharArray())
-			    						)	
-			    				);
-			                    
-			                    char[] decryptedAuthor = EncryptionUtils.toCharArray(
-			    						encryptionHelper.decrypt(
-			    								Base64.getDecoder().decode(
-			    										author
-			    								), 
-			    								EncryptionUtils.getInitializationVector(key.toCharArray())
-			    						)	
-			    				);
-			                    
-			                    char[] decryptedDescription = EncryptionUtils.toCharArray(
-			        	                encryptionHelper.decrypt(
-			        	                    Base64.getDecoder().decode(
-			        	                    		description
-			        	                    ),
-			        	                    EncryptionUtils.getInitializationVector(key.toCharArray())
-			        	                )
-			        	            );
-			                    char[] decryptedBody = EncryptionUtils.toCharArray(
-			        	                encryptionHelper.decrypt(
-			        	                    Base64.getDecoder().decode(
-			        	                    		body
-			        	                    ),
-			        	                    EncryptionUtils.getInitializationVector(key.toCharArray())
-			        	                )
-			        	            );
-			    				
-			    				char[] decryptedLevel = EncryptionUtils.toCharArray(
-			    						encryptionHelper.decrypt(
-			    								Base64.getDecoder().decode(
-			    										level
-			    								), 
-			    								EncryptionUtils.getInitializationVector(key.toCharArray())
-			    						)	
-			    				);
-			    				
-			    				char[] decryptedGID = EncryptionUtils.toCharArray(
-			    						encryptionHelper.decrypt(
-			    								Base64.getDecoder().decode(
-			    										groupID
-			    								), 
-			    								EncryptionUtils.getInitializationVector(key.toCharArray())
-			    						)	
-			    				);
-			    				
-			    				char[] decryptedKeywords = EncryptionUtils.toCharArray(
-			    		                encryptionHelper.decrypt(
-			    		                    Base64.getDecoder().decode(
-			    		                    		keywords
-			    		                    ),
-			    		                    EncryptionUtils.getInitializationVector(key.toCharArray())
-			    		                )
-			    		            );
-			    				char[] decryptedAccessLevel = EncryptionUtils.toCharArray(
-			    						encryptionHelper.decrypt(
-			    								Base64.getDecoder().decode(
-			    										accessLevel
-			    								), 
-			    								EncryptionUtils.getInitializationVector(key.toCharArray())
-			    						)	
-			    				);
-			    				char[] decryptedOthers = EncryptionUtils.toCharArray(
-			    		                encryptionHelper.decrypt(
-			    		                    Base64.getDecoder().decode(
-			    		                    		other
-			    		                    ),
-			    		                    EncryptionUtils.getInitializationVector(key.toCharArray())
-			    		                )
-			    		            );
-			    				
-			    				char[] decryptedLinks = EncryptionUtils.toCharArray(
-			    		                encryptionHelper.decrypt(
-			    		                    Base64.getDecoder().decode(
-			    		                    		links
-			    		                    ),
-			    		                    EncryptionUtils.getInitializationVector(key.toCharArray())
-			    		                )
-			    		            );
-			    				
-			                    
-			                    display += "ID: " + newid + "\n";
-			    	            display += "Title: " + decryptedTitle + "\n";
-			    	            display += "Author: " + decryptedAuthor + "\n";
-			    	            display += "Description: " + decryptedDescription + "\n";
-			    	            display += "Body: " + decryptedBody + "\n";
-			    	            display += "Level: " + decryptedLevel +decryptedGID+ "\n";
-			    	            display += "Group Identifier: " + groupID + "\n";
-			    	            display += "Keywords: " + decryptedKeywords + "\n";
-			    	            display += "Access Level: " + decryptedAccessLevel + "\n";
-			    	            display += "Other: " + decryptedOthers + "\n";
-			    	            display += "Links: " + decryptedLinks + "\n";
-			                }
-			        }
-			    }
-		    }
+		  
 		    return display;
 	}
+	
 	
 	/***
 	 * @params username. The user should NOT be promted for their username and the username should be automatically added because of the flow they are already in. 
@@ -588,7 +370,7 @@ class DatabaseHelper {
 	 * If a group is found and it is the same as the one provided and they have viewing rights for that user then that article will be decrypted and displayed. 
 	 * Otherwise only the articles whose accessLevel is public will be able to be displayed.  
 	 * ***/
-	public String displayArticleByGroup(String groupIdentifier, String username) throws Exception {
+public String displayArticleByGroup(String groupIdentifier) throws Exception {
 	    
 	    String query = "SELECT * FROM Articles WHERE groupIdentifier = ? and accessLevel = 'public' ";
 	    
@@ -630,139 +412,11 @@ class DatabaseHelper {
 	        }
 	    }
 	    
-	    String checkGroup = SpecialAccessGroups.getUserGroup(username);
-	    if(checkGroup != null && groupIdentifier == checkGroup && String.valueOf(SpecialAccessGroups.vRights(username, checkGroup)) == "true")
-	    {
-	    	query = "SELECT * FROM Articles WHERE groupIdentifier = ? ";
-	    	try (PreparedStatement pstmt = connection.prepareStatement(query)) { 
-		        pstmt.setString(1, groupIdentifier); 
-
-		        try (ResultSet rs = pstmt.executeQuery()) {
-		        	
-						while(rs.next()) {
-
-		                    int newid = rs.getInt("id");
-		                    long UID = rs.getLong("uniqueID");
-		    				String key = String.valueOf(UID);
-		                    String title = rs.getString("title");
-		                    String author = rs.getString("author");
-		                    String description = rs.getString("description");
-		                    String body = rs.getString("body");
-		                    String level = rs.getString("level");
-		                    String groupID = rs.getString("groupIdentifier");
-		                    String keywords = rs.getString("keywords");
-		                    String accessLevel = rs.getString("accessLevel");
-		                    String other = rs.getString("other");
-		                    String links = rs.getString("links_misc");
-		                    
-		                    
-		                    char[] decryptedTitle = EncryptionUtils.toCharArray(
-		    						encryptionHelper.decrypt(
-		    								Base64.getDecoder().decode(
-		    										title
-		    								), 
-		    								EncryptionUtils.getInitializationVector(key.toCharArray())
-		    						)	
-		    				);
-		                    
-		                    char[] decryptedAuthor = EncryptionUtils.toCharArray(
-		    						encryptionHelper.decrypt(
-		    								Base64.getDecoder().decode(
-		    										author
-		    								), 
-		    								EncryptionUtils.getInitializationVector(key.toCharArray())
-		    						)	
-		    				);
-		                    
-		                    char[] decryptedDescription = EncryptionUtils.toCharArray(
-		        	                encryptionHelper.decrypt(
-		        	                    Base64.getDecoder().decode(
-		        	                    		description
-		        	                    ),
-		        	                    EncryptionUtils.getInitializationVector(key.toCharArray())
-		        	                )
-		        	            );
-		                    char[] decryptedBody = EncryptionUtils.toCharArray(
-		        	                encryptionHelper.decrypt(
-		        	                    Base64.getDecoder().decode(
-		        	                    		body
-		        	                    ),
-		        	                    EncryptionUtils.getInitializationVector(key.toCharArray())
-		        	                )
-		        	            );
-		    				
-		    				char[] decryptedLevel = EncryptionUtils.toCharArray(
-		    						encryptionHelper.decrypt(
-		    								Base64.getDecoder().decode(
-		    										level
-		    								), 
-		    								EncryptionUtils.getInitializationVector(key.toCharArray())
-		    						)	
-		    				);
-		    				
-		    				char[] decryptedGID = EncryptionUtils.toCharArray(
-		    						encryptionHelper.decrypt(
-		    								Base64.getDecoder().decode(
-		    										groupID
-		    								), 
-		    								EncryptionUtils.getInitializationVector(key.toCharArray())
-		    						)	
-		    				);
-		    				
-		    				char[] decryptedKeywords = EncryptionUtils.toCharArray(
-		    		                encryptionHelper.decrypt(
-		    		                    Base64.getDecoder().decode(
-		    		                    		keywords
-		    		                    ),
-		    		                    EncryptionUtils.getInitializationVector(key.toCharArray())
-		    		                )
-		    		            );
-		    				char[] decryptedAccessLevel = EncryptionUtils.toCharArray(
-		    						encryptionHelper.decrypt(
-		    								Base64.getDecoder().decode(
-		    										accessLevel
-		    								), 
-		    								EncryptionUtils.getInitializationVector(key.toCharArray())
-		    						)	
-		    				);
-		    				char[] decryptedOthers = EncryptionUtils.toCharArray(
-		    		                encryptionHelper.decrypt(
-		    		                    Base64.getDecoder().decode(
-		    		                    		other
-		    		                    ),
-		    		                    EncryptionUtils.getInitializationVector(key.toCharArray())
-		    		                )
-		    		            );
-		    				
-		    				char[] decryptedLinks = EncryptionUtils.toCharArray(
-		    		                encryptionHelper.decrypt(
-		    		                    Base64.getDecoder().decode(
-		    		                    		links
-		    		                    ),
-		    		                    EncryptionUtils.getInitializationVector(key.toCharArray())
-		    		                )
-		    		            );
-		    				
-		                    
-		                    display += "ID: " + newid + "\n";
-		    	            display += "Title: " + decryptedTitle + "\n";
-		    	            display += "Author: " + decryptedAuthor + "\n";
-		    	            display += "Description: " + decryptedDescription + "\n";
-		    	            display += "Body: " + decryptedBody + "\n";
-		    	            display += "Level: " + decryptedLevel +decryptedGID+ "\n";
-		    	            display += "Group Identifier: " + groupID + "\n";
-		    	            display += "Keywords: " + decryptedKeywords + "\n";
-		    	            display += "Access Level: " + decryptedAccessLevel + "\n";
-		    	            display += "Other: " + decryptedOthers + "\n";
-		    	            display += "Links: " + decryptedLinks + "\n";
-		                }
-		        }
-		    }
-	    }
+	    
 	    return display;
 	}
 	
-	
+	/*
 	public String searchArticle(String username, String level, String groupIdentifier, String word) throws SQLException {
 	    boolean isSpecialUser = SpecialAccessGroups.doesSpecialUserExist(username);
 	    String accessClause = isSpecialUser
@@ -853,7 +507,95 @@ class DatabaseHelper {
 	    
 	    return display;
 	}
+	*/
 	
+	
+	public String displayArticleByAuthor(String author) throws Exception {
+	    // Query to search for articles by a specific author with public access level
+	    String query = "SELECT * FROM Articles WHERE author = ? AND accessLevel = 'public' ";
+	    String display = "";
+
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, author); // Set the author parameter
+
+	        try (ResultSet rs = pstmt.executeQuery()) {
+	            while (rs.next()) {
+	                int newid = rs.getInt("id");
+	                String title = rs.getString("title");
+	                String articleAuthor = rs.getString("author");
+	                String description = rs.getString("description");
+	                String body = rs.getString("body");
+	                String level = rs.getString("level");
+	                String groupID = rs.getString("groupIdentifier");
+	                String keywords = rs.getString("keywords");
+	                String accessLevel = rs.getString("accessLevel");
+	                String other = rs.getString("other");
+	                String links = rs.getString("links_misc");
+
+	                // Display article details
+	                display += "ID: " + newid + "\n";
+	                display += "Title: " + title + "\n";
+	                display += "Author: " + articleAuthor + "\n";
+	                display += "Description: " + description + "\n";
+	                display += "Body: " + body + "\n";
+	                display += "Level: " + level + "\n";
+	                display += "Group Identifier: " + groupID + "\n";
+	                display += "Keywords: " + keywords + "\n";
+	                display += "Access Level: " + accessLevel + "\n";
+	                display += "Other: " + other + "\n";
+	                display += "Links: " + links + "\n";
+	            }
+	        }
+	    }
+	    return display;
+	}
+	
+	public String searchArticlesByWord(String searchTerm) throws Exception {
+	    
+	    String searchPattern = "%" + searchTerm + "%";
+	    String display = "";
+
+	    
+	    String query = "SELECT * FROM Articles WHERE (title LIKE ? OR description LIKE ? OR keywords LIKE ?) AND accessLevel = 'public' ";
+	    
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	       
+	        pstmt.setString(1, searchPattern); // Search in title
+	        pstmt.setString(2, searchPattern); // Search in description
+	        pstmt.setString(3, searchPattern); // Search in keywords
+
+	        try (ResultSet rs = pstmt.executeQuery()) {
+	            while (rs.next()) {
+	                int newid = rs.getInt("id");
+	                String title = rs.getString("title");
+	                String author = rs.getString("author");
+	                String description = rs.getString("description");
+	                String body = rs.getString("body");
+	                String level = rs.getString("level");
+	                String groupID = rs.getString("groupIdentifier");
+	                String keywords = rs.getString("keywords");
+	                String accessLevel = rs.getString("accessLevel");
+	                String other = rs.getString("other");
+	                String links = rs.getString("links_misc");
+
+	                // Display article details
+	                display += "ID: " + newid + "\n";
+	                display += "Title: " + title + "\n";
+	                display += "Author: " + author + "\n";
+	                display += "Description: " + description + "\n";
+	                display += "Body: " + body + "\n";
+	                display += "Level: " + level + "\n";
+	                display += "Group Identifier: " + groupID + "\n";
+	                display += "Keywords: " + keywords + "\n";
+	                display += "Access Level: " + accessLevel + "\n";
+	                display += "Other: " + other + "\n";
+	                display += "Links: " + links + "\n";
+	     
+	                }
+	            }
+	        }
+	    return display;
+	}
 	
 	public void addSpecificMessage(String username, String message) throws SQLException {
 	    String insertMessage = "INSERT INTO queries (username, question, answered) VALUES (?, ?, FALSE)";
@@ -1643,5 +1385,3 @@ public String displayUnansweredStudentQueries() throws SQLException {
 		} 
 	}
 }
-	
-	
